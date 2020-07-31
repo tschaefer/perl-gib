@@ -1,0 +1,41 @@
+package Perl::Gib::Item;
+
+##! #[ignore(item)]
+
+use strict;
+use warnings;
+
+use Moose::Role;
+
+has 'fragment' => (
+    is       => 'ro',
+    isa      => 'ArrayRef[PPI::Element]',
+    required => 1,
+);
+
+has 'statement' => (
+    is       => 'ro',
+    isa      => 'Str',
+    lazy     => 1,
+    builder  => '_build_statement',
+    init_arg => undef,
+);
+
+has 'description' => (
+    is       => 'ro',
+    isa      => 'Maybe[Str]',
+    lazy     => 1,
+    builder  => '_build_description',
+    init_arg => undef,
+);
+
+sub BUILD {
+    my $self = shift;
+
+    $self->statement;
+    $self->description;
+
+    return;
+}
+
+1;

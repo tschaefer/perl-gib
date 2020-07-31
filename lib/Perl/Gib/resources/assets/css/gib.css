@@ -1,0 +1,59 @@
+/*! Perl::Gib Stylesheet */
+html, body {
+    padding: 1rem;
+    margin: auto;
+    max-width: 48rem;
+    background: #fefefe;
+}
+body {
+    font: 1.2rem "Vollkorn", Times;
+    color: #333;
+    line-height: 1.4;
+    text-align: justify;
+}
+h1, h2 {
+    border-bottom: 1px solid #ddd;
+}
+pre {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    background: #f7f7f7;
+    overflow: auto;
+    -ms-overflow-style: scrollbar;
+}
+code {
+    font-size: 0.85rem;
+}
+h3 > code {
+    font-size: 1rem;
+}
+a {
+    color: #2484c1;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+p {
+    margin-top: 0;
+    -webkit-hypens: auto;
+    -moz-hypens: auto;
+    hyphens: auto;
+}
+ul {
+    list-style: square;
+    padding-left: 1.2em;
+}
+ol {
+    padding-left: 1.2em;
+}
+blockquote {
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 5px solid #ddd;
+    font-style: italic;
+}
+.hljs {
+    background: inherit;
+}

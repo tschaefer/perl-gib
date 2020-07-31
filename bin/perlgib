@@ -1,0 +1,111 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Getopt::Long;
+use Pod::Usage;
+
+use Perl::Gib qw(doc test);
+
+no warnings "uninitialized";
+
+my %opts;
+
+sub print_usage {
+    return pod2usage( -exitval => 255, -verbose => 0 );
+}
+
+sub print_help {
+    return pod2usage(
+        -exitval  => 0,
+        -verbose  => 99,
+        -sections => 'SYNOPSIS|OPTIONS|PARAMETERS',
+    );
+}
+
+sub print_man {
+    return pod2usage( -exitval => 0, -verbose => 2 );
+}
+
+sub run {
+    GetOptions(
+        "help|h" => \$opts{'help'},
+        "man|m"  => \$opts{'man'},
+    ) or return print_usage();
+
+    return print_usage() if ( $opts{'help'} && $opts{'man'} );
+    return print_help()  if ( $opts{'help'} );
+    return print_man()   if ( $opts{'man'} );
+
+    my %METHOD = (
+        doc   => \&doc,
+        test  => \&test,
+    );
+
+    my $action = shift @ARGV;
+    print_usage() if ( !$action );
+
+    my $method = $METHOD{$action};
+    return print_usage() if ( !$method );
+
+    &$method();
+
+    return 0;
+}
+
+exit run();
+
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+perlgib - Perl's alternative documentation and test manager.
+
+=head1 SYNOPSIS
+
+perlgib --help|-h | --man|-m
+
+perlgib doc | test
+
+=head1 OPTIONS
+
+=over 8
+
+=item --help|-h
+
+Print short usage help.
+
+=item --man|-h
+
+Print extended usage help.
+
+=back
+
+=head1 PARAMETERS
+
+=over 8
+
+=item B<doc>
+
+Build library documentation.
+
+=item B<test>
+
+Execute documentation tests.
+
+=back
+
+=head1 DESCRIPTION
+
+perlgib is Perl's alternative documentation and test manager.
+
+perlgib generates HTML documentation and runs tests from Perl code comment
+lines.
+
+=cut
