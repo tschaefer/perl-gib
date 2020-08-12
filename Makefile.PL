@@ -25,6 +25,7 @@ WriteMakefile(
         'PPI'                   => '1.270',
         'Readonly'              => '2.05',
         'Text::Markdown'        => '1.000031',
+        'Try::Tiny'             => '0.30',
     },
     'VERSION_FROM' => 'lib/Perl/Gib.pm',
     'clean'        => { FILES => 'Perl-Glib-*' },

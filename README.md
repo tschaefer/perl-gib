@@ -38,7 +38,7 @@ If the postmodern object system for Perl 5
 documentation comment lines are used.
 
 * attributes `has`
-* method modifiers `before`, `after`, `around`, `overwrite`.
+* method modifiers `before`, `after`, `around`, `augment`, `override`.
 
 ### Comments
 

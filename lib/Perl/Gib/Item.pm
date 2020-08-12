@@ -7,6 +7,8 @@ use warnings;
 
 use Moose::Role;
 
+requires qw(_build_statement _build_description);
+
 has 'fragment' => (
     is       => 'ro',
     isa      => 'ArrayRef[PPI::Element]',

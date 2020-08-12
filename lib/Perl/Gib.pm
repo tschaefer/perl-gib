@@ -35,7 +35,7 @@ use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 no warnings "uninitialized";
 
@@ -74,10 +74,7 @@ has 'docpath' => (
 sub _build_docpath {
     my $self = shift;
 
-    my $path = catdir( cwd(), 'doc' );
-    mkpath($path);
-
-    return $path;
+    return catdir( cwd(), 'doc' );
 }
 
 sub _build_libpath {
@@ -188,24 +185,27 @@ sub BUILD {
 ###
 ### ```
 ###     use File::Find;
+###     use File::Copy::Recursive qw(pathrm);
+###
+###     my $keep = -d 'doc/';
 ###
 ###     my $perlgib = Perl::Gib->new();
 ###     $perlgib->doc();
 ###
 ###     my @wanted = (
 ###         "doc/Perl/Gib.html",
-###         "doc/Perl/Gib/Index.html",
 ###         "doc/Perl/Gib/Markdown.html",
 ###         "doc/Perl/Gib/Module.html",
-###         "doc/Perl/Gib/Syntax.html",
 ###         "doc/Perl/Gib/Template.html",
 ###     );
 ###
 ###     my @docs;
-###     find( sub { push @docs, $File::Find::name if ( -f && /\.html$/); }, 'doc/' );
+###     find( sub { push @docs, $File::Find::name if ( -f && /\.html$/ ); }, 'doc/' );
 ###     @docs = sort @docs;
 ###
-###     is_deeply(\@docs, \@wanted, 'all docs generated');
+###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     pathrm( 'doc', 1 ) or die("Could not clean up.") if ( !$keep );
 ### ```
 sub doc {
     my $self = shift;

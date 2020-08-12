@@ -7,7 +7,6 @@ use warnings;
 
 use Moose::Role;
 
-use List::Util qw(uniq);
 use Readonly;
 use Try::Tiny;
 
@@ -16,6 +15,7 @@ use Perl::Gib::Item::Modifier;
 
 Readonly::Hash my %METHOD_MODIFIER_KEYWORDS => (
     after    => 1,
+    augment  => 1,
     around   => 1,
     before   => 1,
     override => 1,
