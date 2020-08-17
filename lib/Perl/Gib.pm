@@ -29,13 +29,14 @@ use File::Find qw(find);
 use File::Path qw(mkpath);
 use File::Spec::Functions qw(:ALL);
 use File::Which;
+use Mojo::Template;
 use Try::Tiny;
 
 use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 no warnings "uninitialized";
 
@@ -153,19 +154,81 @@ sub _object_doc_path {
 }
 
 sub _create_doc {
-    my ( $self, $object ) = @_;
+    my ( $self, $object, $index ) = @_;
 
     my ( $dir, $file ) = $self->_object_doc_path($object);
     mkpath($dir);
 
+    my %navigation;
+    while ( my ( $title, $link ) = each %{$index} ) {
+        $navigation{$title} = abs2rel( $link, $dir );
+    }
+
     my $template = catfile( $self->_resource('lib:templates'), 'gib.html.ep' );
     my $html     = Perl::Gib::Template->new(
-        file    => $template,
-        assets  => abs2rel( $self->_resource('doc:assets'), $dir ),
+        file   => $template,
+        assets => {
+            path       => abs2rel( $self->_resource('doc:assets'), $dir ),
+            navigation => \%navigation,
+        },
         content => $object
     );
 
     $html->write($file);
+
+    return;
+}
+
+sub _create_index {
+    my $self = shift;
+
+    my %index;
+    foreach my $module ( @{ $self->modules } ) {
+        my ( $dir, $file ) = $self->_object_doc_path($module);
+        my $title = $module->package->statement;
+        $index{$title} = $file;
+    }
+
+    foreach my $document ( @{ $self->markdowns } ) {
+        my ( $dir, $file ) = $self->_object_doc_path($document);
+        my $title = $file;
+        ( undef, undef, $title ) = splitpath($file);
+        $title =~ s/\.md//;
+        $index{$title} = $file;
+    }
+
+    return \%index;
+}
+
+sub _write_index_file {
+    my ( $self, $index ) = @_;
+
+    my $template = <<'TEMPLATE';
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Perl Module Documentation">
+    <meta name="author" content="perlgib">
+    <meta http-equiv="refresh" content="0; url=<%= $redirect %>" />
+  </head>
+  <body>
+    <p><a href="<%= $redirect %>">Redirect</a></p>
+  </body>
+</html>
+TEMPLATE
+
+    my $title    = ( sort keys %{$index} )[0];
+    my $link     = $index->{$title};
+    my $redirect = abs2rel( $link, $self->docpath );
+    my $html     = Mojo::Template->new()->vars(1)
+      ->render( $template, { redirect => $redirect } );
+
+    my $file = catfile( $self->docpath, 'index.html' );
+    open my $fh, '>', $file or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
+    print {$fh} $html;
+    close $fh or undef;
 
     return;
 }
@@ -197,6 +260,7 @@ sub BUILD {
 ###         "doc/Perl/Gib/Markdown.html",
 ###         "doc/Perl/Gib/Module.html",
 ###         "doc/Perl/Gib/Template.html",
+###         "doc/index.html",
 ###     );
 ###
 ###     my @docs;
@@ -214,12 +278,15 @@ sub doc {
 
     dircopy( $self->_resource('lib:assets'), $self->_resource('doc:assets') );
 
+    my $index = $self->_create_index();
+    $self->_write_index_file($index);
+
     foreach my $module ( @{ $self->modules } ) {
-        $self->_create_doc($module);
+        $self->_create_doc( $module, $index );
     }
 
     foreach my $document ( @{ $self->markdowns } ) {
-        $self->_create_doc($document);
+        $self->_create_doc( $document, $index );
     }
 
     return;

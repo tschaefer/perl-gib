@@ -4,16 +4,32 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Perl Module Documentation">
-    <meta name="author" content="cameleer">
+    <meta name="author" content="perlgib">
     <title><%= $title %></title>
-    <link rel="stylesheet" href="<%= $assets %>/css/normalize.css">
-    <link rel="stylesheet" href="<%= $assets %>/fonts/vollkorn.css">
-    <link rel="stylesheet" href="<%= $assets %>/css/highlight.css">
-    <link rel="stylesheet" href="<%= $assets %>/css/gib.css">
+    <link rel="stylesheet" href="<%= $assets->{'path'} %>/css/normalize.css">
+    <link rel="stylesheet" href="<%= $assets->{'path'} %>/fonts/vollkorn.css">
+    <link rel="stylesheet" href="<%= $assets->{'path'} %>/css/highlight.css">
+    <link rel="stylesheet" href="<%= $assets->{'path'} %>/css/gib.css">
   </head>
   <body>
-    <%= $content %>
-    <script src="<%= $assets %>/js/highlight.min.js"></script>
-    <script src="<%= $assets %>/js/gib.js"></script>
+    <a id="navbar-toggler" onclick="navbar_toggle()" href="#">☰</a>
+    <div id="container">
+      <nav id="navbar" style="display:block;">
+        <ul>
+          % foreach my $title (sort keys %{$assets->{'navigation'}}) {
+            <li>
+              <a href="<%= $assets->{'navigation'}->{$title} %>">
+                <%= $title %>
+              </a>
+            </li>
+          % }
+        </ul>
+      </nav>
+      <div id="content">
+        <%= $content %>
+      </div>
+    </div>
+    <script src="<%= $assets->{'path'} %>/js/highlight.min.js"></script>
+    <script src="<%= $assets->{'path'} %>/js/gib.js"></script>
   </body>
 </html>

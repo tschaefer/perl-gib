@@ -8,6 +8,7 @@ use lib "$FindBin::Bin/../lib";
 
 use Getopt::Long;
 use Pod::Usage;
+use Time::HiRes qw(gettimeofday);
 
 use Perl::Gib qw(doc test);
 
@@ -42,8 +43,8 @@ sub run {
     return print_man()   if ( $opts{'man'} );
 
     my %METHOD = (
-        doc   => \&doc,
-        test  => \&test,
+        doc  => \&doc,
+        test => \&test,
     );
 
     my $action = shift @ARGV;
@@ -52,7 +53,11 @@ sub run {
     my $method = $METHOD{$action};
     return print_usage() if ( !$method );
 
+    my $start = Time::HiRes::gettimeofday();
     &$method();
+    my $stop = Time::HiRes::gettimeofday();
+
+    printf "Finished %s in %.2fs\n", $action, $stop - $start;
 
     return 0;
 }
