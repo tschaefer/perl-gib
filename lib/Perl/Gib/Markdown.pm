@@ -48,7 +48,24 @@ sub _build_text {
     return $text;
 }
 
+### #[ignore(item)]
+sub BUILD {
+    my $self = shift;
+
+    $self->text;
+
+    return;
+}
+
 ### Return Markdown.
+###
+### ```
+###     my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+###
+###     my $markdown = $doc->to_markdown();
+###     my @lines    = split /\n/, $markdown;
+###     is( $lines[0], '# perlgib', 'Markdown documentation' );
+### ```
 sub to_markdown {
     my $self = shift;
 
@@ -56,6 +73,13 @@ sub to_markdown {
 }
 
 ### Provide content in HTML.
+### ```
+###     my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+###
+###     my $html  = $doc->to_html();
+###     my @lines = split /\n/, $html;
+###     is( $lines[0], '<h1>perlgib</h1>', 'HTML documentation' );
+### ```
 sub to_html {
     my $self = shift;
 

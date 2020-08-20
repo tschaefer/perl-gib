@@ -8,6 +8,7 @@ lib/Perl/Gib/Item/Subroutine.pm
 lib/Perl/Gib/Markdown.pm
 lib/Perl/Gib/Module/Moose.pm
 lib/Perl/Gib/Module.pm
+lib/Perl/Gib/Usage.md
 lib/Perl/Gib.pm
 lib/Perl/Gib/resources/assets/css/gib.css
 lib/Perl/Gib/resources/assets/css/highlight.css
@@ -25,4 +26,10 @@ Makefile.PL
 MANIFEST
 README
 README.md
-t/00_base.t
+t/00_gib.t
+t/01_module.t
+t/02_markdown.t
+t/03_attribute.t
+t/04_modifier.t
+t/05_package.t
+t/06_subroutine.t

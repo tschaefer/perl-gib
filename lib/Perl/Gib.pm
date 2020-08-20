@@ -19,7 +19,8 @@ use warnings;
 use 5.010;
 
 use Moose;
-Moose::Exporter->setup_import_methods( as_is => [ 'doc', 'test' ], );
+Moose::Exporter->setup_import_methods( as_is => [ 'doc', 'test', 'markdown' ],
+);
 
 use Carp qw(croak carp);
 use Cwd qw(cwd realpath);
@@ -36,7 +37,7 @@ use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 no warnings "uninitialized";
 
@@ -120,7 +121,7 @@ sub _build_markdowns {
 sub _resource {
     my ( $self, $label ) = @_;
 
-    my $determine_lib = sub {
+    state $determine_lib = sub {
         my ( $vol, $dir, $file ) = splitpath( realpath(__FILE__) );
         $file =~ s/\.pm//;
         $dir = catdir( $dir, $file );
@@ -129,8 +130,8 @@ sub _resource {
     state $lib = &$determine_lib();
 
     state %resources = (
-        'lib:assets'    => catdir( $lib,           'resources', 'assets' ),
-        'lib:templates' => catdir( $lib,           'resources', 'templates' ),
+        'lib:assets'    => catdir( $lib, 'resources', 'assets' ),
+        'lib:templates' => catdir( $lib, 'resources', 'templates' ),
         'doc:assets'    => catdir( $self->docpath, 'assets' ),
     );
 
@@ -193,7 +194,7 @@ sub _create_index {
         my ( $dir, $file ) = $self->_object_doc_path($document);
         my $title = $file;
         ( undef, undef, $title ) = splitpath($file);
-        $title =~ s/\.md//;
+        $title =~ s/\.html//;
         $index{$title} = $file;
     }
 
@@ -260,6 +261,7 @@ sub BUILD {
 ###         "doc/Perl/Gib/Markdown.html",
 ###         "doc/Perl/Gib/Module.html",
 ###         "doc/Perl/Gib/Template.html",
+###         "doc/Perl/Gib/Usage.html",
 ###         "doc/index.html",
 ###     );
 ###
@@ -281,12 +283,8 @@ sub doc {
     my $index = $self->_create_index();
     $self->_write_index_file($index);
 
-    foreach my $module ( @{ $self->modules } ) {
-        $self->_create_doc( $module, $index );
-    }
-
-    foreach my $document ( @{ $self->markdowns } ) {
-        $self->_create_doc( $document, $index );
+    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
+        $self->_create_doc( $object, $index );
     }
 
     return;
@@ -298,8 +296,55 @@ sub test {
 
     $self = __PACKAGE__->new() if ( !$self );
 
+    my $rc = 0;
     foreach my $module ( @{ $self->modules } ) {
-        $module->run_test();
+        $rc |= $module->run_test();
+    }
+
+    return $rc;
+}
+
+### Create a new directory, `doc`, generate Markdown content and write it to
+### files.
+### ```
+###     use File::Find;
+###     use File::Copy::Recursive qw(pathrm);
+###
+###     my $keep = -d 'doc/';
+###
+###     my $perlgib = Perl::Gib->new();
+###     $perlgib->markdown();
+###
+###     my @wanted = (
+###         "doc/Perl/Gib.md",
+###         "doc/Perl/Gib/Markdown.md",
+###         "doc/Perl/Gib/Module.md",
+###         "doc/Perl/Gib/Template.md",
+###         "doc/Perl/Gib/Usage.md",
+###     );
+###
+###     my @docs;
+###     find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, 'doc/' );
+###     @docs = sort @docs;
+###
+###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     pathrm( 'doc', 1 ) or die("Could not clean up.") if ( !$keep );
+### ```
+sub markdown {
+    my $self = shift;
+
+    $self = __PACKAGE__->new() if ( !$self );
+
+    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
+        my ( $dir, $file ) = $self->_object_doc_path($object);
+        mkpath($dir);
+
+        $file =~ s/\.html/.md/;
+        open my $fh, '>', $file
+          or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
+        print {$fh} $object->to_markdown();
+        close $fh or undef;
     }
 
     return;

@@ -10,7 +10,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Time::HiRes qw(gettimeofday);
 
-use Perl::Gib qw(doc test);
+use Perl::Gib qw(doc test markdown);
 
 no warnings "uninitialized";
 
@@ -32,19 +32,33 @@ sub print_man {
     return pod2usage( -exitval => 0, -verbose => 2 );
 }
 
+sub print_version {
+    printf "perlgib %s\n", $Perl::Gib::VERSION;
+
+    return;
+}
+
 sub run {
     GetOptions(
-        "help|h" => \$opts{'help'},
-        "man|m"  => \$opts{'man'},
+        "help|h"    => \$opts{'help'},
+        "man|m"     => \$opts{'man'},
+        "version|v" => \$opts{'version'},
     ) or return print_usage();
 
-    return print_usage() if ( $opts{'help'} && $opts{'man'} );
-    return print_help()  if ( $opts{'help'} );
-    return print_man()   if ( $opts{'man'} );
+    my $count = 0;
+    foreach ( values %opts ) {
+        $count += 1 if ($_);
+    }
+
+    return print_usage()   if ( $count > 1 );
+    return print_help()    if ( $opts{'help'} );
+    return print_man()     if ( $opts{'man'} );
+    return print_version() if ( $opts{'version'} );
 
     my %METHOD = (
-        doc  => \&doc,
-        test => \&test,
+        doc      => \&doc,
+        test     => \&test,
+        markdown => \&markdown,
     );
 
     my $action = shift @ARGV;
@@ -54,12 +68,12 @@ sub run {
     return print_usage() if ( !$method );
 
     my $start = Time::HiRes::gettimeofday();
-    &$method();
+    my $rc = &$method();
     my $stop = Time::HiRes::gettimeofday();
 
     printf "Finished %s in %.2fs\n", $action, $stop - $start;
 
-    return 0;
+    return $rc;
 }
 
 exit run();
@@ -86,7 +100,7 @@ perlgib doc | test
 
 Print short usage help.
 
-=item --man|-h
+=item --man|-m
 
 Print extended usage help.
 
@@ -98,7 +112,11 @@ Print extended usage help.
 
 =item B<doc>
 
-Build library documentation.
+Build library documentation in HTML.
+
+=item B<markdown>
+
+Build library documentation in Markdown.
 
 =item B<test>
 

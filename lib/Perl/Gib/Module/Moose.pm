@@ -147,7 +147,7 @@ override 'to_markdown' => sub {
 ## Attributes
 
 % foreach my $attr (@{$attributes}) {
-### `<%= $attr->statement %>`
+### `<%= $attr->statement %>; #<%= $attr->line_number %>`
 
 % if ($attr->description) {
 <%= $attr->description %>
@@ -162,7 +162,7 @@ override 'to_markdown' => sub {
 ## Methods
 
 % foreach my $sub (@{$subroutines}) {
-### `<%= $sub->statement %>`
+### `<%= $sub->statement %>; #<%= $sub->line_number %>`
 
 % if ($sub->description) {
 <%= $sub->description %>
@@ -177,7 +177,7 @@ override 'to_markdown' => sub {
 ## Modifiers
 
 % foreach my $mod (@{$modifiers}) {
-### `<%= $mod->statement %>`
+### `<%= $mod->statement %>; #<%= $mod->line_number %>`
 
 % if ($mod->description) {
 <%= $mod->description %>

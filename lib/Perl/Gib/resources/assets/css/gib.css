@@ -24,9 +24,6 @@ pre {
 code {
     font-size: 0.85rem;
 }
-h3 > code {
-    font-size: 1rem;
-}
 a {
     color: #2484c1;
     text-decoration: none;
@@ -61,9 +58,14 @@ blockquote {
 }
 #content {
     max-width: 768px;
+    display: block;
 }
 #content > h1, h2 {
     border-bottom: 1px solid #ddd;
+}
+#content > h3 > code {
+    font-size: 1rem;
+    font-weight: normal;
 }
 #navbar {
     margin-right: 3rem;
@@ -73,9 +75,29 @@ blockquote {
     list-style: none;
     padding-left: 0;
 }
-#navbar-toggler {
-    color: inherit;
+#toggler > a {
     text-decoration: none;
+    color: #998;
+    font-size: small;
+    font-family: sans-serif;
+}
+#toggler > a:hover {
+    color: inherit;
+}
+#code {
+    display: none;
+}
+#top {
+    text-align: center;
+}
+#top > a {
+    text-decoration: none;
+    color: #998;
+    font-size: small;
+    font-family: sans-serif;
+}
+#top > a:hover {
+    color: inherit;
 }
 @media (max-width: 768px) {
     #container {

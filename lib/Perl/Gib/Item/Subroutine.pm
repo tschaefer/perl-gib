@@ -35,7 +35,7 @@ sub _build_statement {
     };
     $get_params->();
 
-    return sprintf "sub %s(%s)", $self->fragment->[0]->name, join ',', @params;
+    return sprintf "sub %s(%s)", $self->fragment->[0]->name, join ', ', @params;
 }
 
 sub _build_description {

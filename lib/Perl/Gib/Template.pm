@@ -6,12 +6,15 @@ package Perl::Gib::Template;
 use strict;
 use warnings;
 
+use Moose;
+
 use English qw(-no_match_vars);
 use File::Spec::Functions qw(:ALL);
 use Carp qw(croak);
 use Mojo::Template;
 
-use Moose;
+use Perl::Gib::Module;
+use Perl::Gib::Markdown;
 
 ### Path to template file. [required]
 has 'file' => (
@@ -55,7 +58,7 @@ sub _build_model {
         <$fh>;
 
     };
-    close $fh or carp( sprintf "%s: %s", $OS_ERROR, $self->file );
+    close $fh or undef;
 
     $model =~ s/^\s+|\s+$//g;
 
@@ -66,21 +69,37 @@ sub _build_model {
 ###
 ### Following named variables pass data to the template.
 ###
-### * **title** - dependent on document type
-### * **content** - document HTML documentation
-### * **assets** - any data (default, path to CSS, JS, fonts when using
-### Perl::Gib)
+### **title** - dependent on document type,
+### **content** - document HTML documentation,
+### **assets** - any data.
+###
+### ```
+###     use Perl::Gib::Module;
+###
+###     my $module   = Perl::Gib::Module->new( file => 'lib/Perl/Gib/Module.pm' );
+###     my $template = Perl::Gib::Template->new(
+###         file   => 'lib/Perl/Gib/resources/templates/gib.html.ep',
+###         assets => {
+###             path => 'lib/Perl/Gib/resources/assets',
+###         },
+###         content => $module,
+###     );
+###     my $html  = $template->render();
+###     my @lines = split /\n/, $html;
+###     is( $lines[0], '<!doctype html>', 'HTML documentation' );
+### ```
 sub render {
     my $self = shift;
 
-    my $title;
+    my ( $source, $title );
     if ( $self->content->isa("Perl::Gib::Markdown") ) {
         my ( $vol, $dir, $file ) = splitpath( $self->content->file );
         $file =~ s/\.md//g;
         $title = $file;
     }
     else {
-        $title = $self->content->package->statement;
+        $title  = $self->content->package->statement;
+        $source = $self->content->code();
     }
 
     return Mojo::Template->new()->vars(1)->render(
@@ -89,6 +108,7 @@ sub render {
             title   => $title,
             content => $self->content->to_html,
             assets  => $self->assets,
+            source  => $source,
         }
     );
 }

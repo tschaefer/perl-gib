@@ -31,6 +31,14 @@ has 'description' => (
     init_arg => undef,
 );
 
+has 'line_number' => (
+    is       => 'ro',
+    isa      => 'Maybe[Int]',
+    lazy     => 1,
+    builder  => '_build_line_number',
+    init_arg => undef,
+);
+
 sub BUILD {
     my $self = shift;
 
@@ -38,6 +46,12 @@ sub BUILD {
     $self->description;
 
     return;
+}
+
+sub _build_line_number {
+    my $self = shift;
+
+    return $self->fragment->[0]->line_number;
 }
 
 1;

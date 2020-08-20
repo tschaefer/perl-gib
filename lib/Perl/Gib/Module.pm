@@ -11,6 +11,9 @@ use Moose;
 use Moose::Util qw(apply_all_roles);
 
 use Carp qw(croak);
+use Cwd qw(cwd);
+use English qw(-no_match_vars);
+use File::Spec::Functions qw(:ALL);
 use File::Temp qw(tempfile);
 use Mojo::Template;
 use PPI;
@@ -59,9 +62,20 @@ has 'subroutines' => (
 sub _build_dom {
     my $self = shift;
 
-    my $dom = PPI::Document->new( $self->file );
+    my $dom = PPI::Document->new( $self->file, readonly => 1 );
     croak( sprintf "Module is empty: %s", $self->file ) if ( !$dom );
+    $dom->index_locations();
     $dom->prune('PPI::Token::Whitespace');
+    $dom->prune(
+        sub {
+            my ( $node, $element ) = @_;
+
+            return 1
+              if ( $element->isa('PPI::Token::Comment')
+                && $element =~ /## no critic/ );
+            return 0;
+        }
+    );
 
     return $dom;
 }
@@ -178,6 +192,14 @@ sub BUILD {
 }
 
 ### Provide documentation in Markdown.
+###
+### ```
+###     my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+###
+###     my $markdown = $module->to_markdown();
+###     my @lines    = split /\n/, $markdown;
+###     is( $lines[0], '# Perl::Gib::Module', 'Markdown documentation' );
+### ```
 sub to_markdown {
     my $self = shift;
 
@@ -192,7 +214,7 @@ sub to_markdown {
 ## Subroutines
 
 % foreach my $sub (@{$subroutines}) {
-### `<%= $sub->statement %>`
+### `<%= $sub->statement %>; #<%= $sub->line_number %>`
 
 % if ($sub->description) {
 <%= $sub->description %>
@@ -211,6 +233,14 @@ TEMPLATE
 }
 
 ### Provide documentation in HTML.
+###
+### ```
+###     my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+###
+###     my $html = $module->to_html();
+###     my @lines    = split /\n/, $html;
+###     is( $lines[0], '<h1>Perl::Gib::Module</h1>', 'HTML documentation' );
+### ```
 sub to_html {
     my $self = shift;
 
@@ -271,13 +301,31 @@ TEMPLATE
     print {$fh} $test;
     close $fh or undef;
 
-    $library ||= 'lib/';
+    $library ||= catdir( cwd(), 'lib' );
     my $cmd = sprintf "prove --lib %s --verbose %s", $library, $file;
     system split / /, $cmd;
+    my $rc = $CHILD_ERROR >> 8;
 
     unlink $file;
 
-    return;
+    return $rc;
+}
+
+### Return plain code.
+sub code {
+    my $self = shift;
+
+    my $fh;
+    my $code = do {
+        local $RS = undef;
+        ## no critic (InputOutput::RequireBriefOpen)
+        open $fh, '<', $self->file
+          or croak( sprintf "%s: %s", $OS_ERROR, $self->file );
+        <$fh>;
+    };
+    close $fh or carp( sprintf "%s: %s", $OS_ERROR, $self->file );
+
+    return $code;
 }
 
 __PACKAGE__->meta->make_immutable;

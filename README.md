@@ -34,7 +34,7 @@ item documentation comment lines in the found Perl Modules.
 * subroutines (methods)
 
 If the postmodern object system for Perl 5
-[Moose](https://metacpan.org/pod/Moose) is detected following additional item
+[Moose](https://metacpan.org/pod/Moose) is detected, following additional item
 documentation comment lines are used.
 
 * attributes `has`
