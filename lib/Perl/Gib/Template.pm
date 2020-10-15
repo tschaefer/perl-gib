@@ -80,7 +80,8 @@ sub _build_model {
 ###     my $template = Perl::Gib::Template->new(
 ###         file   => 'lib/Perl/Gib/resources/templates/gib.html.ep',
 ###         assets => {
-###             path => 'lib/Perl/Gib/resources/assets',
+###             path  => 'lib/Perl/Gib/resources/assets',
+###             index => '../../index.html',
 ###         },
 ###         content => $module,
 ###     );
@@ -91,15 +92,14 @@ sub _build_model {
 sub render {
     my $self = shift;
 
-    my ( $source, $title );
+    my $title;
     if ( $self->content->isa("Perl::Gib::Markdown") ) {
         my ( $vol, $dir, $file ) = splitpath( $self->content->file );
         $file =~ s/\.md//g;
         $title = $file;
     }
     else {
-        $title  = $self->content->package->statement;
-        $source = $self->content->code();
+        $title = $self->content->package->statement;
     }
 
     return Mojo::Template->new()->vars(1)->render(
@@ -108,7 +108,6 @@ sub render {
             title   => $title,
             content => $self->content->to_html,
             assets  => $self->assets,
-            source  => $source,
         }
     );
 }

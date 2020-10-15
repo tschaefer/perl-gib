@@ -16,7 +16,7 @@ package Perl::Gib;
 use strict;
 use warnings;
 
-use 5.010;
+use feature qw(state);
 
 use Moose;
 Moose::Exporter->setup_import_methods( as_is => [ 'doc', 'test', 'markdown' ],
@@ -27,9 +27,8 @@ use Cwd qw(cwd realpath);
 use English qw(-no_match_vars);
 use File::Copy::Recursive qw(dircopy);
 use File::Find qw(find);
-use File::Path qw(mkpath);
+use File::Path qw(make_path);
 use File::Spec::Functions qw(:ALL);
-use File::Which;
 use Mojo::Template;
 use Try::Tiny;
 
@@ -37,7 +36,7 @@ use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 no warnings "uninitialized";
 
@@ -63,6 +62,7 @@ has 'libpath' => (
     isa     => 'Str',
     lazy    => 1,
     builder => '_build_libpath',
+    writer  => '_set_libpath',
 );
 
 ### #[ignore(item)]
@@ -71,6 +71,7 @@ has 'docpath' => (
     isa     => 'Str',
     lazy    => 1,
     builder => '_build_docpath',
+    writer  => '_set_docpath',
 );
 
 sub _build_docpath {
@@ -83,7 +84,6 @@ sub _build_libpath {
     my $self = shift;
 
     my $path = catdir( ( cwd(), 'lib' ) );
-    croak("Library path not found.") if ( !-d $path );
 
     return $path;
 }
@@ -141,10 +141,13 @@ sub _resource {
 sub _object_doc_path {
     my ( $self, $object ) = @_;
 
+    my $lib = $self->libpath;
+    my $doc = $self->docpath;
+
     my ( $vol, $dir, $file ) = splitpath( $object->file );
 
-    $dir = abs2rel($dir);
-    $dir =~ s/^lib/doc/;
+    $dir =~ s/$lib//;
+    $dir = catdir( $doc, $dir );
     $dir = catpath( $vol, rel2abs($dir) );
 
     $file =~ s/\.pm|\.md$/\.html/;
@@ -155,22 +158,17 @@ sub _object_doc_path {
 }
 
 sub _create_doc {
-    my ( $self, $object, $index ) = @_;
+    my ( $self, $object ) = @_;
 
     my ( $dir, $file ) = $self->_object_doc_path($object);
-    mkpath($dir);
-
-    my %navigation;
-    while ( my ( $title, $link ) = each %{$index} ) {
-        $navigation{$title} = abs2rel( $link, $dir );
-    }
+    make_path($dir);
 
     my $template = catfile( $self->_resource('lib:templates'), 'gib.html.ep' );
     my $html     = Perl::Gib::Template->new(
         file   => $template,
         assets => {
-            path       => abs2rel( $self->_resource('doc:assets'), $dir ),
-            navigation => \%navigation,
+            path  => abs2rel( $self->_resource('doc:assets'),          $dir ),
+            index => abs2rel( catfile( $self->docpath, 'index.html' ), $dir ),
         },
         content => $object
     );
@@ -212,19 +210,37 @@ sub _write_index_file {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Perl Module Documentation">
     <meta name="author" content="perlgib">
-    <meta http-equiv="refresh" content="0; url=<%= $redirect %>" />
+    <title>Perl Module Documentation Index</title>
+    <link rel="stylesheet" href="<%= $path %>/css/normalize.css">
+    <link rel="stylesheet" href="<%= $path %>/fonts/vollkorn.css">
+    <link rel="stylesheet" href="<%= $path %>/css/highlight.css">
+    <link rel="stylesheet" href="<%= $path %>/css/gib.css">
   </head>
   <body>
-    <p><a href="<%= $redirect %>">Redirect</a></p>
+    <div id="content">
+      <h1>Table of Content</h1>
+      <ul>
+      <% foreach my $package (sort keys %{$index}) { %>
+          <li><a href="<%= $index->{$package} %>"><%= $package %></a></li>
+      <% } %>
+      </ul>
+    </div>
+    <script src="<%= $path %>/js/highlight.min.js"></script>
+    <script src="<%= $path %>/js/gib.js"></script>
   </body>
 </html>
 TEMPLATE
 
-    my $title    = ( sort keys %{$index} )[0];
-    my $link     = $index->{$title};
-    my $redirect = abs2rel( $link, $self->docpath );
-    my $html     = Mojo::Template->new()->vars(1)
-      ->render( $template, { redirect => $redirect } );
+    foreach my $package ( keys %{$index} ) {
+        $index->{$package} = abs2rel( $index->{$package}, $self->docpath );
+    }
+    my $html = Mojo::Template->new()->vars(1)->render(
+        $template,
+        {
+            index => $index,
+            path  => abs2rel( $self->_resource('doc:assets'), $self->docpath ),
+        }
+    );
 
     my $file = catfile( $self->docpath, 'index.html' );
     open my $fh, '>', $file or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
@@ -238,13 +254,17 @@ TEMPLATE
 sub BUILD {
     my $self = shift;
 
-    $self->libpath;
-    $self->docpath;
+    my $libpath = rel2abs( realpath( $self->libpath ) );
+    croak("Library path not found.") if ( !-d $libpath );
+    $self->_set_libpath($libpath);
+
+    my $docpath = rel2abs( realpath( $self->docpath ) );
+    $self->_set_docpath($docpath);
 
     return;
 }
 
-### Create a new directory, `doc`, copy assets (CSS, JS, fonts), generate HTML
+### Create docpath directory, copy assets (CSS, JS, fonts), generate HTML
 ### content and write it to files.
 ###
 ### ```
@@ -284,7 +304,7 @@ sub doc {
     $self->_write_index_file($index);
 
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        $self->_create_doc( $object, $index );
+        $self->_create_doc($object);
     }
 
     return;
@@ -296,15 +316,14 @@ sub test {
 
     $self = __PACKAGE__->new() if ( !$self );
 
-    my $rc = 0;
     foreach my $module ( @{ $self->modules } ) {
-        $rc |= $module->run_test();
+        $module->run_test( $self->libpath );
     }
 
-    return $rc;
+    return;
 }
 
-### Create a new directory, `doc`, generate Markdown content and write it to
+### Create docpath directory, generate Markdown content and write it to
 ### files.
 ### ```
 ###     use File::Find;
@@ -338,7 +357,7 @@ sub markdown {
 
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
         my ( $dir, $file ) = $self->_object_doc_path($object);
-        mkpath($dir);
+        make_path($dir);
 
         $file =~ s/\.html/.md/;
         open my $fh, '>', $file

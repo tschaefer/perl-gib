@@ -24,6 +24,8 @@ WriteMakefile(
         'Moose'                 => '2.2012',
         'PPI'                   => '1.270',
         'Readonly'              => '2.05',
+        'Test::Exception'       => '0.43',
+        'Test::Moose::More'     => '0.050',
         'Text::Markdown'        => '1.000031',
         'Try::Tiny'             => '0.30',
     },

@@ -1,6 +1,8 @@
 ## no critic
 use Test::More;
 
+use Try::Tiny;
+
 subtest 'class' => sub {
     use Test::Moose::More;
 
@@ -73,10 +75,16 @@ subtest 'test' => sub {
 
     open my $devnull, ">&STDOUT";
     open STDOUT, '>', File::Spec->devnull();
-    my $rc = test();
+    my $rc = try {
+        test();
+        return 1;
+    }
+    catch {
+        return 0;
+    } ;
     open STDOUT, ">&", $devnull;
 
-    is( $rc, 0, 'Test run' );
+    is( $rc, 1, 'Test run' );
 };
 
 done_testing();

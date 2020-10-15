@@ -167,7 +167,8 @@ sub _has_moose {
 
             return 1
               if ( $element->isa('PPI::Statement::Include')
-                && $element->module =~ /^Moose$|^Moose::Role$/ );
+                && $element->module =~
+                /^Moose$|^Moose::Role$|^Moo$|^Moo::Role$/ );
 
             return 0;
         }
@@ -308,24 +309,10 @@ TEMPLATE
 
     unlink $file;
 
-    return $rc;
-}
+    croak( sprintf "Module '%s' test failed", $self->package->statement )
+      if ($rc);
 
-### Return plain code.
-sub code {
-    my $self = shift;
-
-    my $fh;
-    my $code = do {
-        local $RS = undef;
-        ## no critic (InputOutput::RequireBriefOpen)
-        open $fh, '<', $self->file
-          or croak( sprintf "%s: %s", $OS_ERROR, $self->file );
-        <$fh>;
-    };
-    close $fh or carp( sprintf "%s: %s", $OS_ERROR, $self->file );
-
-    return $code;
+    return;
 }
 
 __PACKAGE__->meta->make_immutable;

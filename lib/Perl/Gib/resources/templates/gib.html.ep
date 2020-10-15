@@ -12,38 +12,14 @@
     <link rel="stylesheet" href="<%= $assets->{'path'} %>/css/gib.css">
   </head>
   <body>
-    <div id="toggler">
-      <a id="navbar-toggler" onclick="navbar_toggle()" title="Toggle Navigation" href="#">☰</a>
-      % if ($source) {
-      <a id="code-toggler" onclick="code_toggle()" title="Toggle Source Code" href="#">$</a>
-      % }
-    </div>
-    <div id="container">
-      <nav id="navbar">
-        <ul>
-          % foreach my $title (sort keys %{$assets->{'navigation'}}) {
-            <li>
-              <a href="<%= $assets->{'navigation'}->{$title} %>">
-                <%= $title %>
-              </a>
-            </li>
-          % }
-        </ul>
-      </nav>
-      <div id="content">
-        <%= $content %>
-        <div id="top">
-          <a title="Top of Page" href="#"">↑</a>
-        </div>
+    <div id="content">
+      <div class="navigation">
+        <a href="<%= $assets->{'index'} %>">Index</a>
       </div>
-      % if ($source) {
-      <div id="code">
-        <pre><code><%== $source %></code></pre>
-        <div id="top">
-          <a title="Top of Page" href="#"">↑</a>
-        </div>
+      <%= $content %>
+      <div class="navigation">
+        <a title="Top of Page" href="#"">↑</a>
       </div>
-      % }
     </div>
     <script src="<%= $assets->{'path'} %>/js/highlight.min.js"></script>
     <script src="<%= $assets->{'path'} %>/js/gib.js"></script>

@@ -6,11 +6,17 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use Getopt::Long;
+use Cwd qw(cwd realpath);
+use File::Spec::Functions qw(catdir rel2abs);
+use Getopt::Long qw(:config require_order);
 use Pod::Usage;
+use Term::ANSIColor;
 use Time::HiRes qw(gettimeofday);
+use Try::Tiny;
 
-use Perl::Gib qw(doc test markdown);
+use Perl::Gib;
+
+$Term::ANSIColor::AUTORESET = 1;
 
 no warnings "uninitialized";
 
@@ -38,42 +44,97 @@ sub print_version {
     return;
 }
 
-sub run {
+sub new_perlgib {
+    my $args = shift;
+
+    $args ||= {};
+    $args->{'libpath'} = $opts{'libpath'} if ( $opts{'libpath'} );
+
+    return Perl::Gib->new($args);
+}
+
+sub do_doc {
+    my ( $docpath, $format );
+
     GetOptions(
-        "help|h"    => \$opts{'help'},
-        "man|m"     => \$opts{'man'},
-        "version|v" => \$opts{'version'},
+        "doc-path|d=s" => \$docpath,
+        "format|f=s"   => \$format,
     ) or return print_usage();
 
-    my $count = 0;
-    foreach ( values %opts ) {
-        $count += 1 if ($_);
-    }
+    $format ||= 'html';
 
-    return print_usage()   if ( $count > 1 );
+    my $args = {};
+    $args->{'docpath'} = $docpath if ($docpath);
+    my $perlgib = new_perlgib($args);
+
+    my %formats = (
+        'html'     => 1,
+        'markdown' => 1,
+        'all'      => 1,
+    );
+    print_usage() if ( !$formats{$format} );
+
+    $perlgib->doc()      if ( $format =~ /html|all/ );
+    $perlgib->markdown() if ( $format =~ /markdown|all/ );
+
+    return;
+}
+
+sub do_test {
+    my $perlgib = new_perlgib();
+
+    $perlgib->test();
+
+    return;
+}
+
+sub do_action {
+    my ( $lib, $method, $info ) = @_;
+
+    $lib ||= catdir( cwd(), 'lib' );
+    $lib = rel2abs( realpath($lib) );
+
+    printf "%s (%s)\n", colored( $info, 'green' ), $lib;
+    my $start = Time::HiRes::gettimeofday();
+
+    my $rc = try {
+        &$method();
+        return 0;
+    }
+    catch {
+        printf {*STDERR} "%s\n", ( split / at/ )[0];
+        return 1;
+    };
+
+    my $stop = Time::HiRes::gettimeofday();
+    printf "%s in %.2fs\n", colored( 'Finished', $rc ? 'red' : 'green' ),
+      $stop - $start;
+
+    return $rc;
+}
+
+sub run {
+    GetOptions(
+        "lib-path|l=s" => \$opts{'libpath'},
+        "help|h"       => \$opts{'help'},
+        "man|m"        => \$opts{'man'},
+        "version|v"    => \$opts{'version'},
+    ) or return print_usage();
+
     return print_help()    if ( $opts{'help'} );
     return print_man()     if ( $opts{'man'} );
     return print_version() if ( $opts{'version'} );
 
     my %METHOD = (
-        doc      => \&doc,
-        test     => \&test,
-        markdown => \&markdown,
+        doc  => [ \&do_doc,  'Documenting' ],
+        test => [ \&do_test, 'Testing' ],
     );
 
     my $action = shift @ARGV;
-    print_usage() if ( !$action );
+    return print_usage() if ( !$METHOD{$action} );
 
-    my $method = $METHOD{$action};
-    return print_usage() if ( !$method );
-
-    my $start = Time::HiRes::gettimeofday();
-    my $rc = &$method();
-    my $stop = Time::HiRes::gettimeofday();
-
-    printf "Finished %s in %.2fs\n", $action, $stop - $start;
-
-    return $rc;
+    my ( $method, $info ) = @{ $METHOD{$action} };
+    return do_action( $opts{'libpath'}, $method, $info );
 }
 
 exit run();
@@ -88,13 +149,23 @@ perlgib - Perl's alternative documentation and test manager.
 
 =head1 SYNOPSIS
 
-perlgib --help|-h | --man|-m
+perlgib --help|-h | --man|-m | --version|-v
 
-perlgib doc | test
+perlgib [--lib-path|-l PATH] ACTION
+
+perlgib ... doc [--doc-path|-d PATH] [--format|-f html|markdown|all]
+
+perlgib ... test
 
 =head1 OPTIONS
 
+=head2 base
+
 =over 8
+
+=item --lib-path|-l PATH
+
+Directory with documents (Perl modules, Markdown) to process.
 
 =item --help|-h
 
@@ -106,23 +177,25 @@ Print extended usage help.
 
 =back
 
-=head1 PARAMETERS
+=head2 doc
+
+Build library documentation.
 
 =over 8
 
-=item B<doc>
+=item --doc-path|-d
 
-Build library documentation in HTML.
+Path for documentation output.
 
-=item B<markdown>
+=item --format|-f html|markdown|all
 
-Build library documentation in Markdown.
-
-=item B<test>
-
-Execute documentation tests.
+Format of documentation output, default html.
 
 =back
+
+=head2 test
+
+Execute documentation tests.
 
 =head1 DESCRIPTION
 

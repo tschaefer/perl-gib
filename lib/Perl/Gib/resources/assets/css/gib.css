@@ -53,12 +53,8 @@ blockquote {
 .hljs {
     background: inherit;
 }
-#container {
-    display: flex;
-}
 #content {
     max-width: 768px;
-    display: block;
 }
 #content > h1, h2 {
     border-bottom: 1px solid #ddd;
@@ -67,46 +63,14 @@ blockquote {
     font-size: 1rem;
     font-weight: normal;
 }
-#navbar {
-    margin-right: 3rem;
-    display: block;
-}
-#navbar > ul {
-    list-style: none;
-    padding-left: 0;
-}
-#toggler > a {
-    text-decoration: none;
-    color: #998;
-    font-size: small;
-    font-family: sans-serif;
-}
-#toggler > a:hover {
-    color: inherit;
-}
-#code {
-    display: none;
-}
-#top {
+.navigation {
     text-align: center;
 }
-#top > a {
+.navigation > a {
     text-decoration: none;
     color: #998;
     font-size: small;
-    font-family: sans-serif;
 }
-#top > a:hover {
+.navigation > a:hover {
     color: inherit;
-}
-@media (max-width: 768px) {
-    #container {
-        flex-direction: column;
-    }
-    #navbar {
-        margin-right: 0;
-    }
-    #navbar > ul > li {
-        display: inline;
-    }
 }
