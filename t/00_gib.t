@@ -12,10 +12,10 @@ subtest 'class' => sub {
     is_class_ok($class);
     is_immutable_ok($class);
     check_sugar_ok($class);
-    has_method_ok( $class, qw(doc markdown test) );
+    has_method_ok( $class, qw(html markdown test) );
 };
 
-subtest 'doc' => sub {
+subtest 'html' => sub {
     use File::Find;
     use File::Copy::Recursive qw(pathrm);
 
@@ -24,7 +24,7 @@ subtest 'doc' => sub {
     my $keep = -d 'doc/';
 
     my $perlgib = Perl::Gib->new();
-    $perlgib->doc();
+    $perlgib->html();
 
     my @wanted = (
         "doc/Perl/Gib.html",        "doc/Perl/Gib/Markdown.html",
@@ -71,17 +71,19 @@ subtest 'markdown' => sub {
 subtest 'test' => sub {
     use File::Spec;
 
-    use Perl::Gib qw(test);
+    use Perl::Gib;
+
+    my $perlgib = Perl::Gib->new();
 
     open my $devnull, ">&STDOUT";
     open STDOUT, '>', File::Spec->devnull();
     my $rc = try {
-        test();
+        $perlgib->test();
         return 1;
     }
     catch {
         return 0;
-    } ;
+    };
     open STDOUT, ">&", $devnull;
 
     is( $rc, 1, 'Test run' );

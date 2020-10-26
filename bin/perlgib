@@ -48,23 +48,28 @@ sub new_perlgib {
     my $args = shift;
 
     $args ||= {};
-    $args->{'libpath'} = $opts{'libpath'} if ( $opts{'libpath'} );
+    $args->{'library_path'} = $opts{'library_path'}
+      if ( $opts{'library_path'} );
+    $args->{'library_name'} = $opts{'library_name'}
+      if ( $opts{'library_name'} );
 
     return Perl::Gib->new($args);
 }
 
 sub do_doc {
-    my ( $docpath, $format );
+    my ( $out, $format, $private );
 
     GetOptions(
-        "doc-path|d=s" => \$docpath,
-        "format|f=s"   => \$format,
+        "output-path=s"          => \$out,
+        "output-format=s"        => \$format,
+        "document-private-items" => \$private,
     ) or return print_usage();
 
     $format ||= 'html';
 
     my $args = {};
-    $args->{'docpath'} = $docpath if ($docpath);
+    $args->{'output_path'}            = $out if ($out);
+    $args->{'document_private_items'} = 1    if ($private);
     my $perlgib = new_perlgib($args);
 
     my %formats = (
@@ -74,7 +79,7 @@ sub do_doc {
     );
     print_usage() if ( !$formats{$format} );
 
-    $perlgib->doc()      if ( $format =~ /html|all/ );
+    $perlgib->html()     if ( $format =~ /html|all/ );
     $perlgib->markdown() if ( $format =~ /markdown|all/ );
 
     return;
@@ -89,10 +94,16 @@ sub do_test {
 }
 
 sub do_action {
-    my ( $lib, $method, $info ) = @_;
+    my ( $method, $info ) = @_;
 
-    $lib ||= catdir( cwd(), 'lib' );
-    $lib = rel2abs( realpath($lib) );
+    my $lib = $opts{'library_name'};
+    if ( !$lib ) {
+        $lib =
+            $opts{'library_path'}
+          ? $opts{'library_path'}
+          : catdir( cwd(), 'lib' );
+        $lib = rel2abs( realpath($lib) );
+    }
 
     printf "%s (%s)\n", colored( $info, 'green' ), $lib;
     my $start = Time::HiRes::gettimeofday();
@@ -115,10 +126,11 @@ sub do_action {
 
 sub run {
     GetOptions(
-        "lib-path|l=s" => \$opts{'libpath'},
-        "help|h"       => \$opts{'help'},
-        "man|m"        => \$opts{'man'},
-        "version|v"    => \$opts{'version'},
+        "library-path=s" => \$opts{'library_path'},
+        "library-name=s" => \$opts{'library_name'},
+        "help|h"         => \$opts{'help'},
+        "man|m"          => \$opts{'man'},
+        "version|v"      => \$opts{'version'},
     ) or return print_usage();
 
     return print_help()    if ( $opts{'help'} );
@@ -134,7 +146,7 @@ sub run {
     return print_usage() if ( !$METHOD{$action} );
 
     my ( $method, $info ) = @{ $METHOD{$action} };
-    return do_action( $opts{'libpath'}, $method, $info );
+    return do_action( $method, $info );
 }
 
 exit run();
@@ -151,9 +163,9 @@ perlgib - Perl's alternative documentation and test manager.
 
 perlgib --help|-h | --man|-m | --version|-v
 
-perlgib [--lib-path|-l PATH] ACTION
+perlgib [OPTIONS] ACTION
 
-perlgib ... doc [--doc-path|-d PATH] [--format|-f html|markdown|all]
+perlgib ... doc [OPTIONS]
 
 perlgib ... test
 
@@ -163,10 +175,6 @@ perlgib ... test
 
 =over 8
 
-=item --lib-path|-l PATH
-
-Directory with documents (Perl modules, Markdown) to process.
-
 =item --help|-h
 
 Print short usage help.
@@ -174,6 +182,18 @@ Print short usage help.
 =item --man|-m
 
 Print extended usage help.
+
+=item --version|-v
+
+Print version string.
+
+=item --library-path PATH
+
+Directory with documents (Perl modules, Markdown files) to process.
+
+=item --library-name NAME
+
+Library name.
 
 =back
 
@@ -183,13 +203,17 @@ Build library documentation.
 
 =over 8
 
-=item --doc-path|-d
+=item --output-path
 
-Path for documentation output.
+Documentation output path.
 
-=item --format|-f html|markdown|all
+=item --output-format html|markdown|all
 
-Format of documentation output, default html.
+Documentation output format, default html.
+
+=item --document-private-items
+
+Document private items.
 
 =back
 

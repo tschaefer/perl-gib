@@ -47,12 +47,9 @@ sub _build_attributes {
         if (   $element->isa('PPI::Statement')
             && $element->first_element eq 'has' )
         {
-
-            # Ignore private attributes.
-            # Holy moly this is for pub API documentation,
-            # keep your private shit.
-            my @subelements = $element->elements();
-            next if ( $subelements[1] =~ /^'_/ );
+            next
+              if ( $element->child(1) =~ /^['"]_/
+                && !$self->document_private_items );
 
             my @fragment;
             my $previous = $element->previous_sibling();
@@ -96,11 +93,9 @@ sub _build_modifiers {
             my $keyword = $element->first_element;
             next if ( !$METHOD_MODIFIER_KEYWORDS{$keyword} );
 
-            # Ignore private modifiers.
-            # Holy moly this is for pub API documentation,
-            # keep your private shit.
-            my @subelements = $element->elements();
-            next if ( $subelements[1] =~ /^'_/ );
+            next
+              if ( $element->child(1) =~ /^['"]_/
+                && !$self->document_private_items );
 
             my @fragment;
             my $previous = $element->previous_sibling();
@@ -147,7 +142,7 @@ override 'to_markdown' => sub {
 ## Attributes
 
 % foreach my $attr (@{$attributes}) {
-### `<%= $attr->statement %>; #<%= $attr->line_number %>`
+### `<%= $attr->statement %>; #<%= $attr->line %>`
 
 % if ($attr->description) {
 <%= $attr->description %>
@@ -159,7 +154,7 @@ override 'to_markdown' => sub {
 ## Methods
 
 % foreach my $sub (@{$subroutines}) {
-### `<%= $sub->statement %>; #<%= $sub->line_number %>`
+### `<%= $sub->statement %>; #<%= $sub->line %>`
 
 % if ($sub->description) {
 <%= $sub->description %>
@@ -171,7 +166,7 @@ override 'to_markdown' => sub {
 ## Modifiers
 
 % foreach my $mod (@{$modifiers}) {
-### `<%= $mod->statement %>; #<%= $mod->line_number %>`
+### `<%= $mod->statement %>; #<%= $mod->line %>`
 
 % if ($mod->description) {
 <%= $mod->description %>
@@ -179,7 +174,6 @@ override 'to_markdown' => sub {
 
 % }
 % }
-
 TEMPLATE
 
     return Mojo::Template->new()->vars(1)->render(

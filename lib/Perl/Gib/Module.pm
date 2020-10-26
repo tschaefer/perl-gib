@@ -59,6 +59,13 @@ has 'subroutines' => (
     init_arg => undef,
 );
 
+### Document private items.
+has 'document_private_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
 sub _build_dom {
     my $self = shift;
 
@@ -122,10 +129,9 @@ sub _build_subroutines {
     foreach my $element (@elements) {
         if ( $element->isa('PPI::Statement::Sub') ) {
 
-            # Ignore private subroutines.
-            # Holy moly this is for pub API documentation,
-            # keep your private shit.
-            next if ( $element->name =~ /^_/ );
+            next
+              if ( $element->name =~ /^_/
+                && !$self->document_private_items );
 
             my @fragment;
             my $previous = $element->previous_sibling();
@@ -215,7 +221,7 @@ sub to_markdown {
 ## Subroutines
 
 % foreach my $sub (@{$subroutines}) {
-### `<%= $sub->statement %>; #<%= $sub->line_number %>`
+### `<%= $sub->statement %>; #<%= $sub->line %>`
 
 % if ($sub->description) {
 <%= $sub->description %>

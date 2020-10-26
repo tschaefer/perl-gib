@@ -2,16 +2,9 @@ package Perl::Gib;
 
 ##! Generate Perl project HTML documentation and run module test scripts.
 ##!
-##! Can be used as object
-##!
 ##!     use Perl::Gib;
 ##!     my $perlgib = Perl::Gib->new();
 ##!     $perlgib->doc();
-##!
-##! or subroutines can be called directly.
-##!
-##!     use Perl::Gib qw(test);
-##!     test();
 
 use strict;
 use warnings;
@@ -19,8 +12,6 @@ use warnings;
 use feature qw(state);
 
 use Moose;
-Moose::Exporter->setup_import_methods( as_is => [ 'doc', 'test', 'markdown' ],
-);
 
 use Carp qw(croak carp);
 use Cwd qw(cwd realpath);
@@ -36,7 +27,7 @@ use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 no warnings "uninitialized";
 
@@ -56,31 +47,45 @@ has 'markdowns' => (
     builder => '_build_markdowns',
 );
 
-### #[ignore(item)]
-has 'libpath' => (
+### Path to directory with Perl modules and Markdown files.
+has 'library_path' => (
     is      => 'ro',
     isa     => 'Str',
     lazy    => 1,
-    builder => '_build_libpath',
-    writer  => '_set_libpath',
+    builder => '_build_library_path',
+    writer  => '_set_library_path',
 );
 
-### #[ignore(item)]
-has 'docpath' => (
+### Output path for documentation.
+has 'output_path' => (
     is      => 'ro',
     isa     => 'Str',
     lazy    => 1,
-    builder => '_build_docpath',
-    writer  => '_set_docpath',
+    builder => '_build_output_path',
+    writer  => '_set_output_path',
 );
 
-sub _build_docpath {
+### Document private items.
+has 'document_private_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
+
+### Library name.
+has 'library_name' => (
+    is      => 'ro',
+    isa     => 'Str',
+    default => sub { 'Table of contents' },
+);
+
+sub _build_output_path {
     my $self = shift;
 
     return catdir( cwd(), 'doc' );
 }
 
-sub _build_libpath {
+sub _build_library_path {
     my $self = shift;
 
     my $path = catdir( ( cwd(), 'lib' ) );
@@ -93,11 +98,16 @@ sub _build_modules {
 
     my @files;
     find( sub { push @files, $File::Find::name if ( -f and /\.pm$/ ); },
-        $self->libpath );
+        $self->library_path );
 
     my @modules;
     foreach my $file (@files) {
-        my $module = try { Perl::Gib::Module->new( file => $file ) };
+        my $module = try {
+            Perl::Gib::Module->new(
+                file                   => $file,
+                document_private_items => $self->document_private_items
+            )
+        };
         next if ( !$module );
         push @modules, $module;
     }
@@ -110,7 +120,7 @@ sub _build_markdowns {
 
     my @files;
     find( sub { push @files, $File::Find::name if ( -f and /\.md$/ ); },
-        $self->libpath );
+        $self->library_path );
 
     my @documents =
       map { Perl::Gib::Markdown->new( file => $_ ) } @files;
@@ -118,7 +128,7 @@ sub _build_markdowns {
     return \@documents;
 }
 
-sub _resource {
+sub _get_resource_path {
     my ( $self, $label ) = @_;
 
     state $determine_lib = sub {
@@ -132,17 +142,17 @@ sub _resource {
     state %resources = (
         'lib:assets'    => catdir( $lib, 'resources', 'assets' ),
         'lib:templates' => catdir( $lib, 'resources', 'templates' ),
-        'doc:assets'    => catdir( $self->docpath, 'assets' ),
+        'out:assets'    => catdir( $self->output_path, 'assets' ),
     );
 
     return $resources{$label};
 }
 
-sub _object_doc_path {
+sub _get_obj_doc_path {
     my ( $self, $object ) = @_;
 
-    my $lib = $self->libpath;
-    my $doc = $self->docpath;
+    my $lib = $self->library_path;
+    my $doc = $self->output_path;
 
     my ( $vol, $dir, $file ) = splitpath( $object->file );
 
@@ -157,18 +167,20 @@ sub _object_doc_path {
     return ( $dir, $file );
 }
 
-sub _create_doc {
+sub _create_html_doc {
     my ( $self, $object ) = @_;
 
-    my ( $dir, $file ) = $self->_object_doc_path($object);
+    my ( $dir, $file ) = $self->_get_obj_doc_path($object);
     make_path($dir);
 
-    my $template = catfile( $self->_resource('lib:templates'), 'gib.html.ep' );
-    my $html     = Perl::Gib::Template->new(
+    my $template =
+      catfile( $self->_get_resource_path('lib:templates'), 'gib.html.ep' );
+    my $html = Perl::Gib::Template->new(
         file   => $template,
         assets => {
-            path  => abs2rel( $self->_resource('doc:assets'),          $dir ),
-            index => abs2rel( catfile( $self->docpath, 'index.html' ), $dir ),
+            path  => abs2rel( $self->_get_resource_path('out:assets'), $dir ),
+            index =>
+              abs2rel( catfile( $self->output_path, 'index.html' ), $dir ),
         },
         content => $object
     );
@@ -178,18 +190,18 @@ sub _create_doc {
     return;
 }
 
-sub _create_index {
+sub _create_html_index {
     my $self = shift;
 
     my %index;
     foreach my $module ( @{ $self->modules } ) {
-        my ( $dir, $file ) = $self->_object_doc_path($module);
+        my ( $dir, $file ) = $self->_get_obj_doc_path($module);
         my $title = $module->package->statement;
         $index{$title} = $file;
     }
 
     foreach my $document ( @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_object_doc_path($document);
+        my ( $dir, $file ) = $self->_get_obj_doc_path($document);
         my $title = $file;
         ( undef, undef, $title ) = splitpath($file);
         $title =~ s/\.html//;
@@ -199,7 +211,7 @@ sub _create_index {
     return \%index;
 }
 
-sub _write_index_file {
+sub _write_html_index_file {
     my ( $self, $index ) = @_;
 
     my $template = <<'TEMPLATE';
@@ -210,7 +222,7 @@ sub _write_index_file {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Perl Module Documentation">
     <meta name="author" content="perlgib">
-    <title>Perl Module Documentation Index</title>
+    <title><%= $name %></title>
     <link rel="stylesheet" href="<%= $path %>/css/normalize.css">
     <link rel="stylesheet" href="<%= $path %>/fonts/vollkorn.css">
     <link rel="stylesheet" href="<%= $path %>/css/highlight.css">
@@ -218,7 +230,7 @@ sub _write_index_file {
   </head>
   <body>
     <div id="content">
-      <h1>Table of Content</h1>
+      <h1><%= $name %></h1>
       <input type="text" id="index-filter" onkeyup="filter_list()" placeholder="Search for document ...">
       <ul id="index-list">
       <% foreach my $package (sort keys %{$index}) { %>
@@ -233,17 +245,22 @@ sub _write_index_file {
 TEMPLATE
 
     foreach my $package ( keys %{$index} ) {
-        $index->{$package} = abs2rel( $index->{$package}, $self->docpath );
+        $index->{$package} =
+          abs2rel( $index->{$package}, $self->output_path );
     }
     my $html = Mojo::Template->new()->vars(1)->render(
         $template,
         {
             index => $index,
-            path  => abs2rel( $self->_resource('doc:assets'), $self->docpath ),
+            path  => abs2rel(
+                $self->_get_resource_path('out:assets'),
+                $self->output_path
+            ),
+            name => $self->library_name,
         }
     );
 
-    my $file = catfile( $self->docpath, 'index.html' );
+    my $file = catfile( $self->output_path, 'index.html' );
     open my $fh, '>', $file or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
     print {$fh} $html;
     close $fh or undef;
@@ -255,17 +272,17 @@ TEMPLATE
 sub BUILD {
     my $self = shift;
 
-    my $libpath = rel2abs( realpath( $self->libpath ) );
-    croak("Library path not found.") if ( !-d $libpath );
-    $self->_set_libpath($libpath);
+    my $library_path = rel2abs( realpath( $self->library_path ) );
+    croak("Library path not found.") if ( !-d $library_path );
+    $self->_set_library_path($library_path);
 
-    my $docpath = rel2abs( realpath( $self->docpath ) );
-    $self->_set_docpath($docpath);
+    my $output_path = rel2abs( realpath( $self->output_path ) );
+    $self->_set_output_path($output_path);
 
     return;
 }
 
-### Create docpath directory, copy assets (CSS, JS, fonts), generate HTML
+### Create documentation directory, copy assets (CSS, JS, fonts), generate HTML
 ### content and write it to files.
 ###
 ### ```
@@ -275,7 +292,7 @@ sub BUILD {
 ###     my $keep = -d 'doc/';
 ###
 ###     my $perlgib = Perl::Gib->new();
-###     $perlgib->doc();
+###     $perlgib->html();
 ###
 ###     my @wanted = (
 ###         "doc/Perl/Gib.html",
@@ -294,18 +311,23 @@ sub BUILD {
 ###
 ###     pathrm( 'doc', 1 ) or die("Could not clean up.") if ( !$keep );
 ### ```
-sub doc {
+###
+### The optional `$name` argument is set as topic in the index HTML document.
+sub html {
     my $self = shift;
 
     $self = __PACKAGE__->new() if ( !$self );
 
-    dircopy( $self->_resource('lib:assets'), $self->_resource('doc:assets') );
+    dircopy(
+        $self->_get_resource_path('lib:assets'),
+        $self->_get_resource_path('out:assets')
+    );
 
-    my $index = $self->_create_index();
-    $self->_write_index_file($index);
+    my $index = $self->_create_html_index();
+    $self->_write_html_index_file($index);
 
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        $self->_create_doc($object);
+        $self->_create_html_doc($object);
     }
 
     return;
@@ -318,13 +340,13 @@ sub test {
     $self = __PACKAGE__->new() if ( !$self );
 
     foreach my $module ( @{ $self->modules } ) {
-        $module->run_test( $self->libpath );
+        $module->run_test( $self->library_path );
     }
 
     return;
 }
 
-### Create docpath directory, generate Markdown content and write it to
+### Create documentation directory, generate Markdown content and write it to
 ### files.
 ### ```
 ###     use File::Find;
@@ -357,7 +379,7 @@ sub markdown {
     $self = __PACKAGE__->new() if ( !$self );
 
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_object_doc_path($object);
+        my ( $dir, $file ) = $self->_get_obj_doc_path($object);
         make_path($dir);
 
         $file =~ s/\.html/.md/;
