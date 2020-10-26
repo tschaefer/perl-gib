@@ -36,7 +36,7 @@ use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 no warnings "uninitialized";
 
@@ -219,7 +219,8 @@ sub _write_index_file {
   <body>
     <div id="content">
       <h1>Table of Content</h1>
-      <ul>
+      <input type="text" id="index-filter" onkeyup="filter_list()" placeholder="Search for document ...">
+      <ul id="index-list">
       <% foreach my $package (sort keys %{$index}) { %>
           <li><a href="<%= $index->{$package} %>"><%= $package %></a></li>
       <% } %>

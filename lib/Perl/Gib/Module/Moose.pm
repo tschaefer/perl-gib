@@ -152,9 +152,6 @@ override 'to_markdown' => sub {
 % if ($attr->description) {
 <%= $attr->description %>
 % }
-% else {
-> No documentation found.
-% }
 
 % }
 % }
@@ -167,9 +164,6 @@ override 'to_markdown' => sub {
 % if ($sub->description) {
 <%= $sub->description %>
 % }
-% else {
-> No documentation found.
-% }
 
 % }
 % }
@@ -181,9 +175,6 @@ override 'to_markdown' => sub {
 
 % if ($mod->description) {
 <%= $mod->description %>
-% }
-% else {
-> No documentation found.
 % }
 
 % }

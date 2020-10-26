@@ -220,9 +220,6 @@ sub to_markdown {
 % if ($sub->description) {
 <%= $sub->description %>
 % }
-% else {
-> No documentation found.
-% }
 
 % }
 % }
