@@ -17,55 +17,50 @@ subtest 'class' => sub {
 
 subtest 'html' => sub {
     use File::Find;
-    use File::Copy::Recursive qw(pathrm);
+    use Path::Tiny;
 
-    use Perl::Gib;
+    my $dir = Path::Tiny->tempdir->stringify;
 
-    my $keep = -d 'doc/';
-
-    my $perlgib = Perl::Gib->new();
-    $perlgib->html();
+    my $perlgib = Perl::Gib->new( { output_path => $dir } );
+    $perlgib->markdown();
 
     my @wanted = (
-        "doc/Perl/Gib.html",        "doc/Perl/Gib/Markdown.html",
-        "doc/Perl/Gib/Module.html", "doc/Perl/Gib/Template.html",
-        "doc/Perl/Gib/Usage.html",  "doc/index.html",
+        path( $dir, "Perl/Gib.md" ),
+        path( $dir, "Perl/Gib/Markdown.md" ),
+        path( $dir, "Perl/Gib/Module.md" ),
+        path( $dir, "Perl/Gib/Template.md" ),
+        path( $dir, "Perl/Gib/Usage.md" ),
     );
 
     my @docs;
-    find( sub { push @docs, $File::Find::name if ( -f && /\.html$/ ); },
-        'doc/' );
+    find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, $dir );
     @docs = sort @docs;
 
     is_deeply( \@docs, \@wanted, 'all docs generated' );
-
-    pathrm( 'doc', 1 ) or die "Could not clean up." if ( !$keep );
 };
 
 subtest 'markdown' => sub {
     use File::Find;
-    use File::Copy::Recursive qw(pathrm);
+    use Path::Tiny;
 
-    use Perl::Gib;
+    my $dir = Path::Tiny->tempdir->stringify;
 
-    my $keep = -d 'doc/';
-
-    my $perlgib = Perl::Gib->new();
+    my $perlgib = Perl::Gib->new( { output_path => $dir } );
     $perlgib->markdown();
 
     my @wanted = (
-        "doc/Perl/Gib.md",        "doc/Perl/Gib/Markdown.md",
-        "doc/Perl/Gib/Module.md", "doc/Perl/Gib/Template.md",
-        "doc/Perl/Gib/Usage.md",
+        path( $dir, "Perl/Gib.md" ),
+        path( $dir, "Perl/Gib/Markdown.md" ),
+        path( $dir, "Perl/Gib/Module.md" ),
+        path( $dir, "Perl/Gib/Template.md" ),
+        path( $dir, "Perl/Gib/Usage.md" ),
     );
 
     my @docs;
-    find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, 'doc/' );
+    find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, $dir );
     @docs = sort @docs;
 
     is_deeply( \@docs, \@wanted, 'all docs generated' );
-
-    pathrm( 'doc', 1 ) or die "Could not clean up." if ( !$keep );
 };
 
 subtest 'test' => sub {

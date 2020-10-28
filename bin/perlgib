@@ -6,9 +6,8 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use Cwd qw(cwd realpath);
-use File::Spec::Functions qw(catdir rel2abs);
 use Getopt::Long qw(:config require_order);
+use Path::Tiny;
 use Pod::Usage;
 use Term::ANSIColor;
 use Time::HiRes qw(gettimeofday);
@@ -45,33 +44,24 @@ sub print_version {
 }
 
 sub new_perlgib {
-    my $args = shift;
+    while ( my ( $key, $value ) = each %opts ) {
+        delete $opts{$key} if ( !defined $value );
+    }
 
-    $args ||= {};
-    $args->{'library_path'} = $opts{'library_path'}
-      if ( $opts{'library_path'} );
-    $args->{'library_name'} = $opts{'library_name'}
-      if ( $opts{'library_name'} );
-
-    return Perl::Gib->new($args);
+    return Perl::Gib->new(%opts);
 }
 
 sub do_doc {
-    my ( $out, $format, $private );
-
     GetOptions(
-        "output-path=s"          => \$out,
-        "output-format=s"        => \$format,
-        "document-private-items" => \$private,
+        "output-path=s"          => \$opts{'output_path'},
+        "output-format=s"        => \$opts{'output_format'},
+        "document-private-items" => \$opts{'document_private_items'},
+        "no-html-index"          => \$opts{'no_html_index'},
     ) or return print_usage();
 
-    $format ||= 'html';
+    my $perlgib = new_perlgib();
 
-    my $args = {};
-    $args->{'output_path'}            = $out if ($out);
-    $args->{'document_private_items'} = 1    if ($private);
-    my $perlgib = new_perlgib($args);
-
+    my $format  = $opts{'output_format'} || 'html';
     my %formats = (
         'html'     => 1,
         'markdown' => 1,
@@ -99,10 +89,10 @@ sub do_action {
     my $lib = $opts{'library_name'};
     if ( !$lib ) {
         $lib =
-            $opts{'library_path'}
-          ? $opts{'library_path'}
-          : catdir( cwd(), 'lib' );
-        $lib = rel2abs( realpath($lib) );
+          $opts{'library_path'}
+          ? path( $opts{'library_path'} )
+          : path('lib');
+        $lib = $lib->absolute->realpath->stringify;
     }
 
     printf "%s (%s)\n", colored( $info, 'green' ), $lib;
@@ -215,6 +205,10 @@ Documentation output format, default html.
 
 Document private items.
 
+=item --no-html-index
+
+Prevent creating html index.
+
 =back
 
 =head2 test
@@ -225,7 +219,7 @@ Execute documentation tests.
 
 perlgib is Perl's alternative documentation and test manager.
 
-perlgib generates HTML documentation and runs tests from Perl code comment
-lines.
+perlgib generates HTML and Markdown documentation and runs tests from Perl
+code comment lines.
 
 =cut

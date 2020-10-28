@@ -14,20 +14,18 @@ use feature qw(state);
 use Moose;
 
 use Carp qw(croak carp);
-use Cwd qw(cwd realpath);
 use English qw(-no_match_vars);
-use File::Copy::Recursive qw(dircopy);
+use File::Copy::Recursive qw(dircopy dirmove);
 use File::Find qw(find);
-use File::Path qw(make_path);
-use File::Spec::Functions qw(:ALL);
 use Mojo::Template;
+use Path::Tiny;
 use Try::Tiny;
 
 use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
 
-our $VERSION = '0.07';
+our $VERSION = '0.09';
 
 no warnings "uninitialized";
 
@@ -51,8 +49,7 @@ has 'markdowns' => (
 has 'library_path' => (
     is      => 'ro',
     isa     => 'Str',
-    lazy    => 1,
-    builder => '_build_library_path',
+    default => sub { path('lib')->absolute->stringify; },
     writer  => '_set_library_path',
 );
 
@@ -60,8 +57,7 @@ has 'library_path' => (
 has 'output_path' => (
     is      => 'ro',
     isa     => 'Str',
-    lazy    => 1,
-    builder => '_build_output_path',
+    default => sub { path('doc')->absolute->stringify; },
     writer  => '_set_output_path',
 );
 
@@ -79,19 +75,20 @@ has 'library_name' => (
     default => sub { 'Library' },
 );
 
-sub _build_output_path {
-    my $self = shift;
+### Prevent creating html index.
+has 'no_html_index' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
 
-    return catdir( cwd(), 'doc' );
-}
-
-sub _build_library_path {
-    my $self = shift;
-
-    my $path = catdir( ( cwd(), 'lib' ) );
-
-    return $path;
-}
+### #[ignore(item)]
+has 'tmp_output_path' => (
+    is      => 'ro',
+    isa     => 'Str',
+    lazy    => 1,
+    builder => '_build_tmp_output_path',
+);
 
 sub _build_modules {
     my $self = shift;
@@ -128,41 +125,46 @@ sub _build_markdowns {
     return \@documents;
 }
 
+sub _build_tmp_output_path {
+    my $self = shift;
+
+    return Path::Tiny->tempdir->stringify;
+}
+
 sub _get_resource_path {
     my ( $self, $label ) = @_;
 
     state $determine_lib = sub {
-        my ( $vol, $dir, $file ) = splitpath( realpath(__FILE__) );
-        $file =~ s/\.pm//;
-        $dir = catdir( $dir, $file );
-        return catpath( $vol, $dir );
+        my $file = path(__FILE__)->absolute->stringify;
+        my ($dir) = $file =~ /(.+)\.pm$/;
+
+        return $dir;
     };
     state $lib = &$determine_lib();
 
     state %resources = (
-        'lib:assets'    => catdir( $lib, 'resources', 'assets' ),
-        'lib:templates' => catdir( $lib, 'resources', 'templates' ),
-        'out:assets'    => catdir( $self->output_path, 'assets' ),
+        'lib:assets'    => path( $lib, 'resources', 'assets' ),
+        'lib:templates' => path( $lib, 'resources', 'templates' ),
+        'out:assets'    => path( $self->tmp_output_path, 'assets' ),
     );
 
     return $resources{$label};
 }
 
-sub _get_obj_doc_path {
+sub _get_obj_out_path {
     my ( $self, $object ) = @_;
 
     my $lib = $self->library_path;
-    my $doc = $self->output_path;
+    my $out = $self->tmp_output_path;
 
-    my ( $vol, $dir, $file ) = splitpath( $object->file );
+    my $dir  = path( $object->file )->parent->stringify;
+    my $file = path( $object->file )->basename;
 
     $dir =~ s/$lib//;
-    $dir = catdir( $doc, $dir );
-    $dir = catpath( $vol, rel2abs($dir) );
+    $dir = path( $out, $dir );
 
     $file =~ s/\.pm|\.md$/\.html/;
-    $file = catfile( $dir, $file );
-    $file = catpath( $vol, rel2abs($file) );
+    $file = path( $dir, $file );
 
     return ( $dir, $file );
 }
@@ -170,17 +172,24 @@ sub _get_obj_doc_path {
 sub _create_html_doc {
     my ( $self, $object ) = @_;
 
-    my ( $dir, $file ) = $self->_get_obj_doc_path($object);
-    make_path($dir);
+    my ( $dir, $file ) = $self->_get_obj_out_path($object);
+    path($dir)->mkpath;
+
+    my $index =
+      $self->no_html_index
+      ? undef
+      : path( $self->tmp_output_path, 'index.html' )->relative($dir)->stringify;
 
     my $template =
-      catfile( $self->_get_resource_path('lib:templates'), 'gib.html.ep' );
+      path( $self->_get_resource_path('lib:templates'), 'gib.html.ep' )
+      ->stringify;
     my $html = Perl::Gib::Template->new(
         file   => $template,
         assets => {
-            path  => abs2rel( $self->_get_resource_path('out:assets'), $dir ),
-            index =>
-              abs2rel( catfile( $self->output_path, 'index.html' ), $dir ),
+            path =>
+              path( $self->_get_resource_path('out:assets') )->relative($dir)
+              ->stringify,
+            index => $index,
         },
         content => $object
     );
@@ -195,15 +204,14 @@ sub _create_html_index {
 
     my %index;
     foreach my $module ( @{ $self->modules } ) {
-        my ( $dir, $file ) = $self->_get_obj_doc_path($module);
+        my ( $dir, $file ) = $self->_get_obj_out_path($module);
         my $title = $module->package->statement;
         $index{$title} = $file;
     }
 
     foreach my $document ( @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_get_obj_doc_path($document);
-        my $title = $file;
-        ( undef, undef, $title ) = splitpath($file);
+        my ( $dir, $file ) = $self->_get_obj_out_path($document);
+        my $title = path($file)->basename;
         $title =~ s/\.html//;
         $index{$title} = $file;
     }
@@ -214,56 +222,26 @@ sub _create_html_index {
 sub _write_html_index_file {
     my ( $self, $index ) = @_;
 
-    my $template = <<'TEMPLATE';
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Perl Module Documentation">
-    <meta name="author" content="perlgib">
-    <title><%= $name %></title>
-    <link rel="stylesheet" href="<%= $path %>/css/normalize.css">
-    <link rel="stylesheet" href="<%= $path %>/fonts/vollkorn.css">
-    <link rel="stylesheet" href="<%= $path %>/css/highlight.css">
-    <link rel="stylesheet" href="<%= $path %>/css/gib.css">
-  </head>
-  <body>
-    <div id="content">
-      <h1><%= $name %></h1>
-      <input type="text" id="index-filter" onkeyup="filter_list()" placeholder="Search for document ...">
-      <ul id="index-list">
-      <% foreach my $package (sort keys %{$index}) { %>
-          <li><a href="<%= $index->{$package} %>"><%= $package %></a></li>
-      <% } %>
-      </ul>
-    </div>
-    <script src="<%= $path %>/js/highlight.min.js"></script>
-    <script src="<%= $path %>/js/gib.js"></script>
-  </body>
-</html>
-TEMPLATE
+    my $model =
+      path( $self->_get_resource_path('lib:templates'), 'gib.index.html.ep' )
+      ->slurp;
 
     foreach my $package ( keys %{$index} ) {
         $index->{$package} =
-          abs2rel( $index->{$package}, $self->output_path );
+          path( $index->{$package} )->relative( $self->tmp_output_path )
+          ->stringify;
     }
     my $html = Mojo::Template->new()->vars(1)->render(
-        $template,
+        $model,
         {
             index => $index,
-            path  => abs2rel(
-                $self->_get_resource_path('out:assets'),
-                $self->output_path
-            ),
+            path  => path( $self->_get_resource_path('out:assets') )
+              ->relative( $self->tmp_output_path )->stringify,
             name => $self->library_name,
         }
     );
 
-    my $file = catfile( $self->output_path, 'index.html' );
-    open my $fh, '>', $file or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
-    print {$fh} $html;
-    close $fh or undef;
+    my $file = path( $self->tmp_output_path, 'index.html' )->spew($html);
 
     return;
 }
@@ -272,12 +250,12 @@ TEMPLATE
 sub BUILD {
     my $self = shift;
 
-    my $library_path = rel2abs( realpath( $self->library_path ) );
+    my $library_path =
+      path( $self->library_path )->absolute->stringify;
     croak("Library path not found.") if ( !-d $library_path );
     $self->_set_library_path($library_path);
 
-    make_path( $self->output_path );
-    my $output_path = rel2abs( realpath( $self->output_path ) );
+    my $output_path = path( $self->output_path )->absolute->stringify;
     $self->_set_output_path($output_path);
 
     return;
@@ -288,48 +266,46 @@ sub BUILD {
 ###
 ### ```
 ###     use File::Find;
-###     use File::Copy::Recursive qw(pathrm);
+###     use Path::Tiny;
 ###
-###     my $keep = -d 'doc/';
+###     my $dir = Path::Tiny->tempdir->stringify;
 ###
-###     my $perlgib = Perl::Gib->new();
+###     my $perlgib = Perl::Gib->new({output_path => $dir});
 ###     $perlgib->html();
 ###
 ###     my @wanted = (
-###         "doc/Perl/Gib.html",
-###         "doc/Perl/Gib/Markdown.html",
-###         "doc/Perl/Gib/Module.html",
-###         "doc/Perl/Gib/Template.html",
-###         "doc/Perl/Gib/Usage.html",
-###         "doc/index.html",
+###         path( $dir, "Perl/Gib.html" ),
+###         path( $dir, "Perl/Gib/Markdown.html" ),
+###         path( $dir, "Perl/Gib/Module.html" ),
+###         path( $dir, "Perl/Gib/Template.html" ),
+###         path( $dir, "Perl/Gib/Usage.html" ),
+###         path( $dir, "index.html" ),
 ###     );
 ###
 ###     my @docs;
-###     find( sub { push @docs, $File::Find::name if ( -f && /\.html$/ ); }, 'doc/' );
+###     find( sub { push @docs, $File::Find::name if ( -f && /\.html$/ ); }, $dir );
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
-###
-###     pathrm( 'doc', 1 ) or die("Could not clean up.") if ( !$keep );
 ### ```
-###
-### The optional `$name` argument is set as topic in the index HTML document.
 sub html {
     my $self = shift;
-
-    $self = __PACKAGE__->new() if ( !$self );
 
     dircopy(
         $self->_get_resource_path('lib:assets'),
         $self->_get_resource_path('out:assets')
     );
 
-    my $index = $self->_create_html_index();
-    $self->_write_html_index_file($index);
+    if ( !$self->no_html_index ) {
+        my $index = $self->_create_html_index();
+        $self->_write_html_index_file($index);
+    }
 
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
         $self->_create_html_doc($object);
     }
+
+    dirmove( $self->tmp_output_path, $self->output_path );
 
     return;
 }
@@ -337,8 +313,6 @@ sub html {
 ### Run project modules test scripts.
 sub test {
     my $self = shift;
-
-    $self = __PACKAGE__->new() if ( !$self );
 
     foreach my $module ( @{ $self->modules } ) {
         $module->run_test( $self->library_path );
@@ -351,44 +325,39 @@ sub test {
 ### files.
 ### ```
 ###     use File::Find;
-###     use File::Copy::Recursive qw(pathrm);
+###     use Path::Tiny;
 ###
-###     my $keep = -d 'doc/';
+###     my $dir = Path::Tiny->tempdir->stringify;
 ###
-###     my $perlgib = Perl::Gib->new();
+###     my $perlgib = Perl::Gib->new({output_path => $dir});
 ###     $perlgib->markdown();
 ###
 ###     my @wanted = (
-###         "doc/Perl/Gib.md",
-###         "doc/Perl/Gib/Markdown.md",
-###         "doc/Perl/Gib/Module.md",
-###         "doc/Perl/Gib/Template.md",
-###         "doc/Perl/Gib/Usage.md",
+###         path( $dir, "Perl/Gib.md" ),
+###         path( $dir, "Perl/Gib/Markdown.md" ),
+###         path( $dir, "Perl/Gib/Module.md" ),
+###         path( $dir, "Perl/Gib/Template.md" ),
+###         path( $dir, "Perl/Gib/Usage.md" ),
 ###     );
 ###
 ###     my @docs;
-###     find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, 'doc/' );
+###     find( sub { push @docs, $File::Find::name if ( -f && /\.md$/ ); }, $dir );
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
-###
-###     pathrm( 'doc', 1 ) or die("Could not clean up.") if ( !$keep );
 ### ```
 sub markdown {
     my $self = shift;
 
-    $self = __PACKAGE__->new() if ( !$self );
-
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_get_obj_doc_path($object);
-        make_path($dir);
+        my ( $dir, $file ) = $self->_get_obj_out_path($object);
+        path($dir)->mkpath;
 
         $file =~ s/\.html/.md/;
-        open my $fh, '>', $file
-          or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
-        print {$fh} $object->to_markdown();
-        close $fh or undef;
+        path($file)->spew( $object->to_markdown() );
     }
+
+    dirmove( $self->tmp_output_path, $self->output_path );
 
     return;
 }

@@ -11,11 +11,9 @@ use Moose;
 use Moose::Util qw(apply_all_roles);
 
 use Carp qw(croak);
-use Cwd qw(cwd);
 use English qw(-no_match_vars);
-use File::Spec::Functions qw(:ALL);
-use File::Temp qw(tempfile);
 use Mojo::Template;
+use Path::Tiny;
 use PPI;
 use Text::Markdown qw(markdown);
 use Try::Tiny;
@@ -301,16 +299,13 @@ TEMPLATE
       ->render( $template,
         { package => $self->package->statement, tests => \%tests } );
 
-    my ( $fh, $file ) = tempfile();
-    print {$fh} $test;
-    close $fh or undef;
+    my $file = Path::Tiny->tempfile();
+    $file->spew($test);
 
-    $library ||= catdir( cwd(), 'lib' );
-    my $cmd = sprintf "prove --lib %s --verbose %s", $library, $file;
+    $library ||= path('lib')->absolute;
+    my $cmd = sprintf "prove --lib %s --verbose %s", $library, $file->stringify;
     system split / /, $cmd;
     my $rc = $CHILD_ERROR >> 8;
-
-    unlink $file;
 
     croak( sprintf "Module '%s' test failed", $self->package->statement )
       if ($rc);

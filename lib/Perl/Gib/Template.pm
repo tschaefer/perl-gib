@@ -9,9 +9,9 @@ use warnings;
 use Moose;
 
 use English qw(-no_match_vars);
-use File::Spec::Functions qw(:ALL);
 use Carp qw(croak);
 use Mojo::Template;
+use Path::Tiny;
 
 use Perl::Gib::Module;
 use Perl::Gib::Markdown;
@@ -49,20 +49,7 @@ has 'model' => (
 sub _build_model {
     my $self = shift;
 
-    my $fh;
-    my $model = do {
-        local $RS = undef;
-        ## no critic (InputOutput::RequireBriefOpen)
-        open $fh, '<', $self->file
-          or croak( sprintf "%s: %s", $OS_ERROR, $self->file );
-        <$fh>;
-
-    };
-    close $fh or undef;
-
-    $model =~ s/^\s+|\s+$//g;
-
-    return $model;
+    return path( $self->file )->slurp;
 }
 
 ### Render content and return HTML documentation.
@@ -94,7 +81,7 @@ sub render {
 
     my $title;
     if ( $self->content->isa("Perl::Gib::Markdown") ) {
-        my ( $vol, $dir, $file ) = splitpath( $self->content->file );
+        my $file = path( $self->content->file )->basename;
         $file =~ s/\.md//g;
         $title = $file;
     }
@@ -117,12 +104,11 @@ sub write {
     my ( $self, $file ) = @_;
 
     my $html = $self->render();
-
-    open my $fh, '>', $file or croak( sprintf "%s: '%s'", $OS_ERROR, $file );
-    print {$fh} $html;
-    close $fh or undef;
+    path($file)->spew($html);
 
     return;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

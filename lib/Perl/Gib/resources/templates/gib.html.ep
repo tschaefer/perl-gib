@@ -14,9 +14,11 @@
   <body>
     <div id="content">
       <%= $content %>
+    % if (defined $assets->{'index'}) {
       <div class="navigation">
         <a href="<%= $assets->{'index'} %>">Index</a>
       </div>
+    % }
     </div>
     <script src="<%= $assets->{'path'} %>/js/highlight.min.js"></script>
     <script src="<%= $assets->{'path'} %>/js/gib.js"></script>
