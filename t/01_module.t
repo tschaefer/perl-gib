@@ -29,7 +29,7 @@ subtest 'new' => sub {
 
     throws_ok(
         sub { Perl::Gib::Module->new( { file => '/not/found.pm' } ) },
-        qr/Module is empty/,
+        'Moose::Exception::ValidationFailedForInlineTypeConstraint',
         'File not found.'
     );
 
@@ -70,7 +70,7 @@ subtest 'test' => sub {
     open my $devnull, ">&STDOUT";
     open STDOUT, '>', File::Spec->devnull();
     my $rc = try {
-        $module->run_test;
+        $module->run_test('lib');
         return 1;
     }
     catch {

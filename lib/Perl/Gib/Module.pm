@@ -7,6 +7,7 @@ use strict;
 use warnings;
 
 use Moose;
+use MooseX::Types::Path::Tiny qw(AbsFile);
 
 use Moose::Util qw(apply_all_roles);
 
@@ -26,11 +27,13 @@ no warnings "uninitialized";
 ### Path to Perl module file. [required]
 has 'file' => (
     is       => 'ro',
-    isa      => 'Str',
+    isa      => AbsFile,
     required => 1,
+    coerce   => 1,
 );
 
 ### #[ignore(item)]
+### Document Object Model of Perl module.
 has 'dom' => (
     is       => 'ro',
     isa      => 'PPI::Document',
@@ -40,6 +43,7 @@ has 'dom' => (
 );
 
 ### #[ignore(item)]
+### Package item object.
 has 'package' => (
     is       => 'ro',
     isa      => 'Perl::Gib::Item::Package',
@@ -49,6 +53,7 @@ has 'package' => (
 );
 
 ### #[ignore(item)]
+### List of subroutine items.
 has 'subroutines' => (
     is       => 'ro',
     isa      => 'Maybe[ArrayRef[Perl::Gib::Item::Subroutine]]',
@@ -57,18 +62,28 @@ has 'subroutines' => (
     init_arg => undef,
 );
 
-### Document private items.
+### Document private items. [optional]
 has 'document_private_items' => (
     is      => 'ro',
     isa     => 'Bool',
-    default => 0,
+    default => sub { 0 },
 );
 
+### Document ignored items. [optional]
+has 'document_ignored_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
+
+### Parse file with PPI and return DOM. Prune empty lines and
+### [Perl::Critic](https://metacpan.org/pod/Perl::Critic) annotation
+### comments.
 sub _build_dom {
     my $self = shift;
 
-    my $dom = PPI::Document->new( $self->file, readonly => 1 );
-    croak( sprintf "Module is empty: %s", $self->file ) if ( !$dom );
+    my $dom = PPI::Document->new( $self->file->canonpath, readonly => 1 );
+    croak( sprintf "Module is empty: %s", $self->file->canonpath ) if ( !$dom );
     $dom->index_locations();
     $dom->prune('PPI::Token::Whitespace');
     $dom->prune(
@@ -85,6 +100,10 @@ sub _build_dom {
     return $dom;
 }
 
+### Find package statement and belonging comment block in DOM and create
+### equivalent object. If module does not contain a package exception is
+### thrown. By default module with pseudo function `#[ignore(item)]` in
+### package comment block are ignored.
 sub _build_package {
     my $self = shift;
 
@@ -115,9 +134,16 @@ sub _build_package {
     croak( sprintf "Module does not contain package: %s", $self->file )
       if ( !@fragment );
 
-    return Perl::Gib::Item::Package->new( fragment => \@fragment );
+    return Perl::Gib::Item::Package->new(
+        fragment               => \@fragment,
+        document_private_items => $self->document_private_items,
+        document_ignored_items => $self->document_ignored_items,
+    );
 }
 
+### Find subroutine statements and belonging comment block in DOM and create
+### equivalent object. By default private subroutines and subroutines starting
+### with a pseudo function `#[ignore(item)]` in comment block are ignored.
 sub _build_subroutines {
     my $self = shift;
 
@@ -126,10 +152,6 @@ sub _build_subroutines {
     my @subroutines;
     foreach my $element (@elements) {
         if ( $element->isa('PPI::Statement::Sub') ) {
-
-            next
-              if ( $element->name =~ /^_/
-                && !$self->document_private_items );
 
             my @fragment;
             my $previous = $element->previous_sibling();
@@ -146,10 +168,15 @@ sub _build_subroutines {
                 @fragment = reverse @fragment;
 
                 my $sub = try {
-                    Perl::Gib::Item::Subroutine->new( fragment => \@fragment );
+                    Perl::Gib::Item::Subroutine->new(
+                        fragment               => \@fragment,
+                        document_private_items => $self->document_private_items,
+                        document_ignored_items => $self->document_ignored_items
+                    );
                 }
                 catch {
-                    croak($_) if ( $_ !~ /ignored by comment/ );
+                    croak($_)
+                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
                 };
                 last if ( !$sub );
 
@@ -162,10 +189,18 @@ sub _build_subroutines {
     return \@subroutines;
 }
 
-sub _has_moose {
+### #[ignore(item)]
+### Trigger DOM parsing and item creation. Apply role
+### `Perl::Gib::Module::Moose` if `Moose` or `Moo` or their respective Role
+### usage is found.
+sub BUILD {
     my $self = shift;
 
-    return $self->dom->find_first(
+    $self->dom;
+    $self->package;
+    $self->subroutines;
+
+    my $has_moose = $self->dom->find_first(
         sub {
             my ( $node, $element ) = @_;
 
@@ -177,17 +212,8 @@ sub _has_moose {
             return 0;
         }
     );
-}
 
-### #[ignore(item)]
-sub BUILD {
-    my $self = shift;
-
-    $self->dom;
-    $self->package;
-    $self->subroutines;
-
-    if ( $self->_has_moose() ) {
+    if ( $has_moose ) {
         apply_all_roles( $self, 'Perl::Gib::Module::Moose' );
         $self->attributes;
         $self->modifiers;
@@ -249,8 +275,9 @@ sub to_html {
     return markdown( $self->to_markdown() );
 }
 
-### Generate and run Perl module test script with
+### Generate and run Perl module test scripts with
 ### [prove](https://metacpan.org/pod/distribution/Test-Harness/bin/prove).
+### Optional add `$library` to the path for the tests.
 ###
 ### #### Example of produced module test script
 ###
@@ -266,7 +293,6 @@ sub to_html {
 ###
 ###     done_testing();
 ###
-### `$library` path of Perl module, default is **lib**.
 sub run_test {
     my ( $self, $library ) = @_;
 
@@ -302,8 +328,8 @@ TEMPLATE
     my $file = Path::Tiny->tempfile();
     $file->spew($test);
 
-    $library ||= path('lib')->absolute;
-    my $cmd = sprintf "prove --lib %s --verbose %s", $library, $file->stringify;
+    my $cmd = sprintf "prove %s --verbose %s",
+      $library ? ( sprintf "--lib %s", $library ) : '', $file->stringify;
     system split / /, $cmd;
     my $rc = $CHILD_ERROR >> 8;
 

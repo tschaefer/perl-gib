@@ -5,23 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Perl Module Documentation">
     <meta name="author" content="perlgib">
-    <title><%= $name %></title>
-    <link rel="stylesheet" href="<%= $path %>/css/normalize.css">
-    <link rel="stylesheet" href="<%= $path %>/fonts/vollkorn.css">
-    <link rel="stylesheet" href="<%= $path %>/css/highlight.css">
-    <link rel="stylesheet" href="<%= $path %>/css/gib.css">
+    <title><%= $title %></title>
+    <link rel="stylesheet" href="<%= $assets %>/css/normalize.css">
+    <link rel="stylesheet" href="<%= $assets %>/fonts/vollkorn.css">
+    <link rel="stylesheet" href="<%= $assets %>/css/gib.css">
   </head>
   <body>
     <div id="content">
-      <h1><%= $name %></h1>
       <input type="text" id="index-filter" onkeyup="filter_list()" placeholder="Search for document ...">
-      <ul id="index-list">
-      <% foreach my $package (sort keys %{$index}) { %>
-          <li><a href="<%= $index->{$package} %>"><%= $package %></a></li>
-      <% } %>
-      </ul>
+      <%= $content %>
     </div>
-    <script src="<%= $path %>/js/highlight.min.js"></script>
-    <script src="<%= $path %>/js/gib.js"></script>
+    <script src="<%= $assets %>/js/gib.index.js"></script>
   </body>
 </html>

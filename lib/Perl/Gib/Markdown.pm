@@ -6,6 +6,7 @@ use strict;
 use warnings;
 
 use Moose;
+use MooseX::Types::Path::Tiny qw(AbsFile);
 
 use Carp qw(croak carp);
 use English qw(-no_match_vars);
@@ -16,8 +17,9 @@ no warnings "uninitialized";
 ### Path to Markdown file. [required]
 has 'file' => (
     is       => 'ro',
-    isa      => 'Str',
+    isa      => AbsFile,
     required => 1,
+    coerce   => 1,
 );
 
 ### #[ignore(item)]
@@ -32,20 +34,7 @@ has 'text' => (
 sub _build_text {
     my $self = shift;
 
-    my $fh;
-    my $text = do {
-        local $RS = undef;
-        ## no critic (InputOutput::RequireBriefOpen)
-        open $fh, '<', $self->file
-          or croak( sprintf "%s: %s", $OS_ERROR, $self->file );
-        <$fh>;
-
-    };
-    close $fh or carp( sprintf "%s: %s", $OS_ERROR, $self->file );
-
-    $text =~ s/^\s+|\s+$//g;
-
-    return $text;
+    return $self->file->slurp;
 }
 
 ### #[ignore(item)]

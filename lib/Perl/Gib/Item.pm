@@ -1,6 +1,12 @@
 package Perl::Gib::Item;
 
 ##! #[ignore(item)]
+##! This role is the base for all item classes.
+##!
+##! * package
+##! * subroutine
+##! * attribute
+##! * modifier
 
 use strict;
 use warnings;
@@ -9,12 +15,14 @@ use Moose::Role;
 
 requires qw(_build_statement _build_description);
 
+### List of DOM fragments with statement and comment block. [required]
 has 'fragment' => (
     is       => 'ro',
     isa      => 'ArrayRef[PPI::Element]',
     required => 1,
 );
 
+### Statement as string.
 has 'statement' => (
     is       => 'ro',
     isa      => 'Str',
@@ -23,6 +31,7 @@ has 'statement' => (
     init_arg => undef,
 );
 
+### Purged comment block as string.
 has 'description' => (
     is       => 'ro',
     isa      => 'Maybe[Str]',
@@ -31,6 +40,7 @@ has 'description' => (
     init_arg => undef,
 );
 
+### Code line number.
 has 'line' => (
     is       => 'ro',
     isa      => 'Maybe[Int]',
@@ -39,15 +49,32 @@ has 'line' => (
     init_arg => undef,
 );
 
+### Document ignored items. [optional]
+has 'document_ignored_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
+
+### Document private items. [optional]
+has 'document_private_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
+### Trigger item creation.
 sub BUILD {
     my $self = shift;
 
     $self->statement;
     $self->description;
+    $self->line;
 
     return;
 }
 
+### Set code line number of statement.
 sub _build_line {
     my $self = shift;
 

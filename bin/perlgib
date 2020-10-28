@@ -56,6 +56,7 @@ sub do_doc {
         "output-path=s"          => \$opts{'output_path'},
         "output-format=s"        => \$opts{'output_format'},
         "document-private-items" => \$opts{'document_private_items'},
+        "document-ignored-items" => \$opts{'document_ignored_items'},
         "no-html-index"          => \$opts{'no_html_index'},
     ) or return print_usage();
 
@@ -153,11 +154,7 @@ perlgib - Perl's alternative documentation and test manager.
 
 perlgib --help|-h | --man|-m | --version|-v
 
-perlgib [OPTIONS] ACTION
-
-perlgib ... doc [OPTIONS]
-
-perlgib ... test
+perlgib [OPTIONS] doc | test [OPTIONS]
 
 =head1 OPTIONS
 
@@ -179,7 +176,8 @@ Print version string.
 
 =item --library-path PATH
 
-Directory with documents (Perl modules, Markdown files) to process.
+Directory with documents (Perl modules, Markdown files) to process, default
+lib in current working directory.
 
 =item --library-name NAME
 
@@ -195,7 +193,7 @@ Build library documentation.
 
 =item --output-path
 
-Documentation output path.
+Documentation output path, default doc in current working directory.
 
 =item --output-format html|markdown|all
 
@@ -205,9 +203,13 @@ Documentation output format, default html.
 
 Document private items.
 
+=item --document-ignored-items
+
+Document ignored items (#[ignore(item)]).
+
 =item --no-html-index
 
-Prevent creating html index.
+Prevent creating of html index.
 
 =back
 

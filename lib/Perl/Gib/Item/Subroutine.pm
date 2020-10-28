@@ -1,6 +1,8 @@
 package Perl::Gib::Item::Subroutine;
 
 ##! #[ignore(item)]
+##! This class implements role `Perl::Gib::Item` and provides information
+##! about a subroutine.
 
 use strict;
 use warnings;
@@ -12,6 +14,7 @@ use Carp qw(croak);
 
 no warnings "uninitialized";
 
+### Test script.
 has 'test' => (
     is       => 'ro',
     isa      => 'Maybe[Str]',
@@ -20,32 +23,45 @@ has 'test' => (
     init_arg => undef,
 );
 
+### Create item statement string. By default private subroutines are ignored;
+### the class will croak.
 sub _build_statement {
     my $self = shift;
+
+    my $name = $self->fragment->[0]->name;
+    croak( sprintf "Subroutine is private: %s", $name )
+      if ( $name =~ /^_/ && !$self->document_private_items );
 
     my @params;
     my $get_params = sub {
         my $block = $self->fragment->[0]->block;
         return if ( !$block );
 
-        my $variable = $block->find_first('PPI::Statement::Variable');
-        return if ( !$variable );
+        my $statement = $block->find_first('PPI::Statement::Variable');
+        return if ( !$statement );
 
-        @params = $variable->variables;
+        @params = $statement->variables;
     };
     $get_params->();
 
     return sprintf "sub %s(%s)", $self->fragment->[0]->name, join ', ', @params;
 }
 
+### Create item description string by parsing comment block. By default 
+### subroutines starting with a pseudo function `#[ignore(item)]` in comment
+### block are ignored; the class will croak.
 sub _build_description {
     my $self = shift;
 
     my @fragment = @{ $self->fragment };
     shift @fragment;
 
-    croak( sprintf "Subroutine ignored by comment: %s", $self->statement )
-      if ( $fragment[0] =~ /#\[ignore\(item\)\]/ );
+    if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
+        croak( sprintf "Subroutine ignored by comment: %s", $self->statement )
+          if ( !$self->document_ignored_items );
+
+        shift @fragment;
+    }
 
     my $description;
     foreach my $line (@fragment) {
@@ -59,6 +75,8 @@ sub _build_description {
     return $description;
 }
 
+### Create test script by parsing comment block part with three apostrophe as
+### limiter.
 sub _build_test {
     my $self = shift;
 
@@ -86,6 +104,7 @@ sub _build_test {
     return $code;
 }
 
+### Trigger test script build.
 after 'BUILD' => sub {
     my $self = shift;
 

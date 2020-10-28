@@ -12,6 +12,7 @@ use warnings;
 use feature qw(state);
 
 use Moose;
+use MooseX::Types::Path::Tiny qw(AbsPath AbsDir);
 
 use Carp qw(croak carp);
 use English qw(-no_match_vars);
@@ -24,58 +25,66 @@ use Try::Tiny;
 use Perl::Gib::Markdown;
 use Perl::Gib::Module;
 use Perl::Gib::Template;
+use Perl::Gib::Index;
 
-our $VERSION = '0.09';
+our $VERSION = '1.00';
 
 no warnings "uninitialized";
 
 ### #[ignore(item)]
+### List of processed Perl modules.
 has 'modules' => (
     is      => 'ro',
     isa     => 'ArrayRef[Perl::Gib::Module]',
     lazy    => 1,
     builder => '_build_modules',
+    init_arg => undef,
 );
 
 ### #[ignore(item)]
+### List of processed Markdown files.
 has 'markdowns' => (
     is      => 'ro',
     isa     => 'ArrayRef[Perl::Gib::Markdown]',
     lazy    => 1,
     builder => '_build_markdowns',
+    init_arg => undef,
 );
 
-### Path to directory with Perl modules and Markdown files.
+### Path to directory with Perl modules and Markdown files. [optional]
+### > Default `lib` in current directory.
 has 'library_path' => (
     is      => 'ro',
-    isa     => 'Str',
-    default => sub { path('lib')->absolute->stringify; },
-    writer  => '_set_library_path',
+    isa     => AbsDir,
+    coerce  => 1,
+    default => sub { path('lib')->absolute->realpath; },
 );
 
-### Output path for documentation.
+### Output path for documentation. [optional]
+### > Default `doc` in current directory.
 has 'output_path' => (
     is      => 'ro',
-    isa     => 'Str',
-    default => sub { path('doc')->absolute->stringify; },
-    writer  => '_set_output_path',
+    isa     => AbsPath,
+    coerce  => 1,
+    default => sub { path('doc')->absolute; },
 );
 
-### Document private items.
+### Document private items. [optional]
 has 'document_private_items' => (
     is      => 'ro',
     isa     => 'Bool',
     default => sub { 0 },
 );
 
-### Library name.
+### Library name, used as index header. [optional]
+### > Default `Library.`
 has 'library_name' => (
     is      => 'ro',
     isa     => 'Str',
     default => sub { 'Library' },
 );
 
-### Prevent creating html index.
+### Prevent creating html index. [optional]
 has 'no_html_index' => (
     is      => 'ro',
     isa     => 'Bool',
@@ -83,13 +92,25 @@ has 'no_html_index' => (
 );
 
 ### #[ignore(item)]
-has 'tmp_output_path' => (
-    is      => 'ro',
-    isa     => 'Str',
-    lazy    => 1,
-    builder => '_build_tmp_output_path',
+### Working path (temporary directory) for HTML, Markdown files output.
+has 'working_path' => (
+    is       => 'ro',
+    isa      => AbsPath,
+    lazy     => 1,
+    builder  => '_build_working_path',
+    init_arg => undef,
 );
 
+### Document ignored items. [optional]
+has 'document_ignored_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
+
+### Find Perl modules in given library path and process them. By default
+### modules with pseudo function `#[ignore(item)]` in package comment block
+### are ignored.
 sub _build_modules {
     my $self = shift;
 
@@ -102,7 +123,8 @@ sub _build_modules {
         my $module = try {
             Perl::Gib::Module->new(
                 file                   => $file,
-                document_private_items => $self->document_private_items
+                document_private_items => $self->document_private_items,
+                document_ignored_items => $self->document_ignored_items,
             )
         };
         next if ( !$module );
@@ -112,6 +134,7 @@ sub _build_modules {
     return \@modules;
 }
 
+### Find Markdown files in given library path and process them.
 sub _build_markdowns {
     my $self = shift;
 
@@ -125,150 +148,75 @@ sub _build_markdowns {
     return \@documents;
 }
 
-sub _build_tmp_output_path {
+### Create temporary working directory.
+sub _build_working_path {
     my $self = shift;
 
-    return Path::Tiny->tempdir->stringify;
+    return Path::Tiny->tempdir;
 }
 
+### Get path of resource element by label. If (relative) dir is provided the
+### path will be returned relative otherwise absolute.
 sub _get_resource_path {
-    my ( $self, $label ) = @_;
+    my ( $self, $label, $relative_dir ) = @_;
 
-    state $determine_lib = sub {
-        my $file = path(__FILE__)->absolute->stringify;
+    state $determine = sub {
+        my $file = path(__FILE__)->absolute->canonpath;
         my ($dir) = $file =~ /(.+)\.pm$/;
 
-        return $dir;
+        return path( $dir, 'resources' );
     };
-    state $lib = &$determine_lib();
+    state $path = &$determine();
 
     state %resources = (
-        'lib:assets'    => path( $lib, 'resources', 'assets' ),
-        'lib:templates' => path( $lib, 'resources', 'templates' ),
-        'out:assets'    => path( $self->tmp_output_path, 'assets' ),
+        'lib:assets'           => path( $path, 'assets' ),
+        'lib:templates'        => path( $path, 'templates' ),
+        'lib:templates:object' => path( $path, 'templates', 'gib.html.ep' ),
+        'lib:templates:index'  =>
+          path( $path, 'templates', 'gib.index.html.ep' ),
+        'out:assets'         => path( $self->working_path, 'assets' ),
+        'out:index:html'     => path( $self->working_path, 'index.html' ),
+        'out:index:markdown' => path( $self->working_path, 'index.md' ),
     );
+    my $resource = $resources{$label};
 
-    return $resources{$label};
+    $resource = $resource->relative($relative_dir) if ($relative_dir);
+
+    return $resource->canonpath;
 }
 
-sub _get_obj_out_path {
-    my ( $self, $object ) = @_;
+### Get absolute output path (directory, file) of Perl::Gib object
+### (Perl modules, Markdown files). The type identifies the output file suffix.
+###
+### * html => `.html`
+### * markdown => `.md`
+sub _get_output_path {
+    my ( $self, $object, $type ) = @_;
 
-    my $lib = $self->library_path;
-    my $out = $self->tmp_output_path;
+    my $lib     = $self->library_path;
+    my $working = $self->working_path;
 
-    my $dir  = path( $object->file )->parent->stringify;
-    my $file = path( $object->file )->basename;
+    my $file = $object->file;
+    $file =~ s/$lib/$working/;
 
-    $dir =~ s/$lib//;
-    $dir = path( $out, $dir );
-
-    $file =~ s/\.pm|\.md$/\.html/;
-    $file = path( $dir, $file );
-
-    return ( $dir, $file );
-}
-
-sub _create_html_doc {
-    my ( $self, $object ) = @_;
-
-    my ( $dir, $file ) = $self->_get_obj_out_path($object);
-    path($dir)->mkpath;
-
-    my $index =
-      $self->no_html_index
-      ? undef
-      : path( $self->tmp_output_path, 'index.html' )->relative($dir)->stringify;
-
-    my $template =
-      path( $self->_get_resource_path('lib:templates'), 'gib.html.ep' )
-      ->stringify;
-    my $html = Perl::Gib::Template->new(
-        file   => $template,
-        assets => {
-            path =>
-              path( $self->_get_resource_path('out:assets') )->relative($dir)
-              ->stringify,
-            index => $index,
-        },
-        content => $object
-    );
-
-    $html->write($file);
-
-    return;
-}
-
-sub _create_html_index {
-    my $self = shift;
-
-    my %index;
-    foreach my $module ( @{ $self->modules } ) {
-        my ( $dir, $file ) = $self->_get_obj_out_path($module);
-        my $title = $module->package->statement;
-        $index{$title} = $file;
+    if ( $type eq 'html' ) {
+        $file =~ s/\.pm|\.md$/\.html/;
+    }
+    elsif ( $type eq 'markdown' ) {
+        $file =~ s/\.pm/\.md/;
     }
 
-    foreach my $document ( @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_get_obj_out_path($document);
-        my $title = path($file)->basename;
-        $title =~ s/\.html//;
-        $index{$title} = $file;
-    }
-
-    return \%index;
+    return ( path($file)->parent->canonpath, $file );
 }
 
-sub _write_html_index_file {
-    my ( $self, $index ) = @_;
-
-    my $model =
-      path( $self->_get_resource_path('lib:templates'), 'gib.index.html.ep' )
-      ->slurp;
-
-    foreach my $package ( keys %{$index} ) {
-        $index->{$package} =
-          path( $index->{$package} )->relative( $self->tmp_output_path )
-          ->stringify;
-    }
-    my $html = Mojo::Template->new()->vars(1)->render(
-        $model,
-        {
-            index => $index,
-            path  => path( $self->_get_resource_path('out:assets') )
-              ->relative( $self->tmp_output_path )->stringify,
-            name => $self->library_name,
-        }
-    );
-
-    my $file = path( $self->tmp_output_path, 'index.html' )->spew($html);
-
-    return;
-}
-
-### #[ignore(item)]
-sub BUILD {
-    my $self = shift;
-
-    my $library_path =
-      path( $self->library_path )->absolute->stringify;
-    croak("Library path not found.") if ( !-d $library_path );
-    $self->_set_library_path($library_path);
-
-    my $output_path = path( $self->output_path )->absolute->stringify;
-    $self->_set_output_path($output_path);
-
-    return;
-}
-
-### Create documentation directory, copy assets (CSS, JS, fonts), generate HTML
+### Create output directory, copy assets (CSS, JS, fonts), generate HTML
 ### content and write it to files.
 ###
 ### ```
 ###     use File::Find;
 ###     use Path::Tiny;
 ###
-###     my $dir = Path::Tiny->tempdir->stringify;
+###     my $dir = Path::Tiny->tempdir->canonpath;
 ###
 ###     my $perlgib = Perl::Gib->new({output_path => $dir});
 ###     $perlgib->html();
@@ -291,21 +239,46 @@ sub BUILD {
 sub html {
     my $self = shift;
 
+    $self->working_path->mkpath;
+
+    if ( !$self->no_html_index ) {
+
+        my $index = Perl::Gib::Index->new(
+            modules      => $self->modules,
+            markdowns    => $self->markdowns,
+            library_path => $self->library_path,
+            library_name => $self->library_name,
+        );
+
+        my $template = $self->_get_resource_path('lib:templates:index');
+        my $html     = Perl::Gib::Template->new(
+            file    => $template,
+            assets  => 'assets',
+            content => $index,
+        );
+
+        $html->write( $self->_get_resource_path('out:index:html') );
+    }
+
+    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
+        my ( $dir, $file ) = $self->_get_output_path( $object, 'html' );
+        path($dir)->mkpath;
+
+        my $template = $self->_get_resource_path('lib:templates:object');
+        my $html     = Perl::Gib::Template->new(
+            file    => $template,
+            assets  => $self->_get_resource_path( 'out:assets', $dir ),
+            content => $object
+        );
+
+        $html->write($file);
+    }
+
     dircopy(
         $self->_get_resource_path('lib:assets'),
         $self->_get_resource_path('out:assets')
     );
-
-    if ( !$self->no_html_index ) {
-        my $index = $self->_create_html_index();
-        $self->_write_html_index_file($index);
-    }
-
-    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        $self->_create_html_doc($object);
-    }
-
-    dirmove( $self->tmp_output_path, $self->output_path );
+    dirmove( $self->working_path, $self->output_path );
 
     return;
 }
@@ -321,13 +294,12 @@ sub test {
     return;
 }
 
-### Create documentation directory, generate Markdown content and write it to
-### files.
+### Create output directory, generate Markdown content and write it to files.
 ### ```
 ###     use File::Find;
 ###     use Path::Tiny;
 ###
-###     my $dir = Path::Tiny->tempdir->stringify;
+###     my $dir = Path::Tiny->tempdir->canonpath;
 ###
 ###     my $perlgib = Perl::Gib->new({output_path => $dir});
 ###     $perlgib->markdown();
@@ -349,15 +321,16 @@ sub test {
 sub markdown {
     my $self = shift;
 
-    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
-        my ( $dir, $file ) = $self->_get_obj_out_path($object);
-        path($dir)->mkpath;
+    $self->working_path->mkpath;
 
-        $file =~ s/\.html/.md/;
+    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
+        my ( $dir, $file ) = $self->_get_output_path( $object, 'markdown' );
+
+        path($dir)->mkpath;
         path($file)->spew( $object->to_markdown() );
     }
 
-    dirmove( $self->tmp_output_path, $self->output_path );
+    dirmove( $self->working_path, $self->output_path );
 
     return;
 }

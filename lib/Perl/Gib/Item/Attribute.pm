@@ -1,6 +1,8 @@
 package Perl::Gib::Item::Attribute;
 
 ##! #[ignore(item)]
+##! This class implements role `Perl::Gib::Item` and provides information
+##! about a Moose attribute.
 
 use strict;
 use warnings;
@@ -12,25 +14,38 @@ use Carp qw(croak);
 
 no warnings "uninitialized";
 
+### Create item statement string. By default private attributes are ignored;
+### the class will croak.
 sub _build_statement {
     my $self = shift;
 
     my $fragment = $self->fragment->[0];
-    my @elements = $fragment->elements;
 
+    my $name = $fragment->child(1);
+    croak( sprintf "Attribute is private: %s", $name )
+      if ( $name =~ /^['"]_/ && !$self->document_private_items );
+
+    my @elements  = $fragment->elements;
     my $statement = join ' ', @elements[ 0, 1 ];
 
     return $statement;
 }
 
+### Create item description string by parsing comment block. By default 
+### attributes starting with a pseudo function `#[ignore(item)]` in comment
+### block are ignored; the class will croak.
 sub _build_description {
     my $self = shift;
 
     my @fragment = @{ $self->fragment };
     shift @fragment;
 
-    croak( sprintf "Attribute ignored by comment: %s", $self->statement )
-      if ( $fragment[0] =~ /#\[ignore\(item\)\]/ );
+    if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
+        croak( sprintf "Attribute ignored by comment: %s", $self->statement )
+          if ( !$self->document_ignored_items );
+
+        shift @fragment;
+    }
 
     my $description;
     foreach my $line (@fragment) {

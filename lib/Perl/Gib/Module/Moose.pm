@@ -1,6 +1,10 @@
 package Perl::Gib::Module::Moose;
 
 ##! #[ignore(item)]
+##! This role adds additional Moose / Moo items to the Module class.
+##!
+##! * attributes
+##! * modifiers
 
 use strict;
 use warnings;
@@ -21,6 +25,7 @@ Readonly::Hash my %METHOD_MODIFIER_KEYWORDS => (
     override => 1,
 );
 
+### List of attribute items.
 has 'attributes' => (
     is       => 'ro',
     isa      => 'Maybe[ArrayRef[Perl::Gib::Item::Attribute]]',
@@ -29,6 +34,7 @@ has 'attributes' => (
     init_arg => undef,
 );
 
+### List of modifier items.
 has 'modifiers' => (
     is       => 'ro',
     isa      => 'Maybe[ArrayRef[Perl::Gib::Item::Modifier]]',
@@ -37,6 +43,10 @@ has 'modifiers' => (
     init_arg => undef,
 );
 
+### Find attribute (`has`) statements and belonging comment block in DOM and
+### create equivalent object. By default private attributes and attributes
+### starting with a pseudo function `#[ignore(item)]` in comment block are
+### ignored.
 sub _build_attributes {
     my $self = shift;
 
@@ -47,10 +57,6 @@ sub _build_attributes {
         if (   $element->isa('PPI::Statement')
             && $element->first_element eq 'has' )
         {
-            next
-              if ( $element->child(1) =~ /^['"]_/
-                && !$self->document_private_items );
-
             my @fragment;
             my $previous = $element->previous_sibling();
             while ($previous) {
@@ -66,10 +72,15 @@ sub _build_attributes {
                 @fragment = reverse @fragment;
 
                 my $attribute = try {
-                    Perl::Gib::Item::Attribute->new( fragment => \@fragment );
+                    Perl::Gib::Item::Attribute->new(
+                        fragment               => \@fragment,
+                        document_private_items => $self->document_private_items,
+                        document_ignored_items => $self->document_ignored_items
+                    );
                 }
                 catch {
-                    croak($_) if ( $_ !~ /ignored by comment/ );
+                    croak($_)
+                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
                 };
                 last if ( !$attribute );
 
@@ -82,6 +93,12 @@ sub _build_attributes {
     return \@attributes;
 }
 
+### Find modifier statements and belonging comment block in DOM and
+### create equivalent object.
+### By default private method modifiers and method modifiers starting with a
+### pseudo function `#[ignore(item)]` in comment block are ignored.
+###
+### Modifier keywords are `before`, `after`, `around`, `augment`, `override`.
 sub _build_modifiers {
     my $self = shift;
 
@@ -92,10 +109,6 @@ sub _build_modifiers {
         if ( $element->isa('PPI::Statement') ) {
             my $keyword = $element->first_element;
             next if ( !$METHOD_MODIFIER_KEYWORDS{$keyword} );
-
-            next
-              if ( $element->child(1) =~ /^['"]_/
-                && !$self->document_private_items );
 
             my @fragment;
             my $previous = $element->previous_sibling();
@@ -112,10 +125,15 @@ sub _build_modifiers {
                 @fragment = reverse @fragment;
 
                 my $modifier = try {
-                    Perl::Gib::Item::Modifier->new( fragment => \@fragment );
+                    Perl::Gib::Item::Modifier->new(
+                        fragment               => \@fragment,
+                        document_private_items => $self->document_private_items,
+                        document_ignored_items => $self->document_ignored_items
+                    );
                 }
                 catch {
-                    croak($_) if ( $_ !~ /ignored by comment/ );
+                    croak($_)
+                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
                 };
                 last if ( !$modifier );
 
@@ -128,6 +146,7 @@ sub _build_modifiers {
     return \@modifiers;
 }
 
+### Add additional items to Markdown template.
 override 'to_markdown' => sub {
     my $self = shift;
 

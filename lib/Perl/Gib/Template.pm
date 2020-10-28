@@ -1,12 +1,13 @@
 package Perl::Gib::Template;
 
-##! Render document HTML documentation with given
+##! Render object documentation in HTML with given
 ##! [template](https://metacpan.org/pod/Mojo::Template) file.
 
 use strict;
 use warnings;
 
 use Moose;
+use MooseX::Types::Path::Tiny qw(AbsFile);
 
 use English qw(-no_match_vars);
 use Carp qw(croak);
@@ -15,19 +16,20 @@ use Path::Tiny;
 
 use Perl::Gib::Module;
 use Perl::Gib::Markdown;
+use Perl::Gib::Index;
 
 ### Path to template file. [required]
 has 'file' => (
     is       => 'ro',
-    isa      => 'Str',
+    isa      => AbsFile,
     required => 1,
+    coerce   => 1,
 );
 
-### [Perl::Gib](../Gib.html) document ([Module](Module.html),
-### [Markdown](Markdown.html)). [required]
+### Perl::Gib object (Perl module, Markdown file, index). [required]
 has 'content' => (
     is       => 'ro',
-    isa      => 'Perl::Gib::Module|Perl::Gib::Markdown',
+    isa      => 'Perl::Gib::Module|Perl::Gib::Markdown|Perl::Gib::Index',
     required => 1,
 );
 
@@ -40,25 +42,29 @@ has 'assets' => (
 
 ### #[ignore(item)]
 has 'model' => (
-    is      => 'ro',
-    isa     => 'Str',
-    lazy    => 1,
-    builder => '_build_model',
+    is       => 'ro',
+    isa      => 'Str',
+    lazy     => 1,
+    builder  => '_build_model',
+    init_arg => undef,
 );
 
+### Read template file.
 sub _build_model {
     my $self = shift;
 
-    return path( $self->file )->slurp;
+    return $self->file->slurp;
 }
 
 ### Render content and return HTML documentation.
 ###
-### Following named variables pass data to the template.
+### Following named variables pass data to the model.
 ###
-### **title** - dependent on document type,
-### **content** - document HTML documentation,
-### **assets** - any data.
+### * **title** - dependent on object type,
+### * **content** - object HTML documentation,
+### * **assets** - any data.
+###
+### For assets data types see attribute of the same name.
 ###
 ### ```
 ###     use Perl::Gib::Module;
@@ -85,8 +91,11 @@ sub render {
         $file =~ s/\.md//g;
         $title = $file;
     }
-    else {
+    elsif ( $self->content->isa("Perl::Gib::Module") ) {
         $title = $self->content->package->statement;
+    }
+    else {
+        $title = $self->content->library_name;
     }
 
     return Mojo::Template->new()->vars(1)->render(

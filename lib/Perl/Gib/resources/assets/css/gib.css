@@ -55,6 +55,7 @@ blockquote {
 }
 #content {
     max-width: 768px;
+    margin: 0 auto;
 }
 #content > h1, h2 {
     border-bottom: 1px solid #ddd;
@@ -62,15 +63,4 @@ blockquote {
 #content > h3 > code {
     font-size: 1rem;
     font-weight: normal;
-}
-.navigation {
-    text-align: center;
-}
-.navigation > a {
-    text-decoration: none;
-    color: #998;
-    font-size: small;
-}
-.navigation > a:hover {
-    color: inherit;
 }

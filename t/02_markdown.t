@@ -27,7 +27,7 @@ subtest 'new' => sub {
 
     throws_ok(
         sub { Perl::Gib::Markdown->new( { file => '/not/found.pm' } ) },
-        qr/No such file or directory/,
+        'Moose::Exception::ValidationFailedForInlineTypeConstraint',
         'File not found.'
     );
 
