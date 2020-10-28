@@ -76,7 +76,7 @@ has 'document_private_items' => (
 has 'library_name' => (
     is      => 'ro',
     isa     => 'Str',
-    default => sub { 'Table of contents' },
+    default => sub { 'Library' },
 );
 
 sub _build_output_path {
@@ -276,6 +276,7 @@ sub BUILD {
     croak("Library path not found.") if ( !-d $library_path );
     $self->_set_library_path($library_path);
 
+    make_path( $self->output_path );
     my $output_path = rel2abs( realpath( $self->output_path ) );
     $self->_set_output_path($output_path);
 
