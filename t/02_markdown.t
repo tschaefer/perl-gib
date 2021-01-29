@@ -10,7 +10,7 @@ subtest 'class' => sub {
     is_class_ok($class);
     is_immutable_ok($class);
     check_sugar_ok($class);
-    has_method_ok( $class, qw(to_markdown to_html) );
+    has_method_ok( $class, qw(to_markdown to_html to_pod) );
     has_attribute_ok( $class, 'file' );
 };
 
@@ -45,6 +45,10 @@ subtest 'documentation' => sub {
     my $html  = $doc->to_html();
     my @lines = split /\n/, $html;
     is( $lines[0], '<h1>perlgib</h1>', 'HTML documentation' );
+
+    my $pod   = $doc->to_pod();
+    my @lines = split /\n/, $pod;
+    is( $lines[0], '=head1 perlgib', 'POD documentation' );
 };
 
 done_testing();

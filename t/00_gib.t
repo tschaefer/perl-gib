@@ -68,6 +68,32 @@ subtest 'markdown' => sub {
     $dir->remove_tree( { safe => 0 } );
 };
 
+subtest 'pod' => sub {
+    use File::Find;
+    use Path::Tiny;
+
+    my $dir = Path::Tiny->tempdir;
+
+    my $perlgib = Perl::Gib->new( { output_path => $dir } );
+    $perlgib->pod();
+
+    my @wanted = (
+        path( $dir, "Perl/Gib.pod" ),
+        path( $dir, "Perl/Gib/Markdown.pod" ),
+        path( $dir, "Perl/Gib/Module.pod" ),
+        path( $dir, "Perl/Gib/Template.pod" ),
+        path( $dir, "Perl/Gib/Usage.pod" ),
+    );
+
+    my @docs;
+    find( sub { push @docs, $File::Find::name if ( -f && /\.pod$/ ); }, $dir );
+    @docs = sort @docs;
+
+    is_deeply( \@docs, \@wanted, 'all docs generated' );
+
+    $dir->remove_tree( { safe => 0 } );
+};
+
 subtest 'test' => sub {
     use File::Spec;
 

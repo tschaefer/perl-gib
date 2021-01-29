@@ -10,6 +10,7 @@ use MooseX::Types::Path::Tiny qw(AbsFile);
 
 use Carp qw(croak carp);
 use English qw(-no_match_vars);
+use Pod::HTML2Pod;
 use Text::Markdown qw(markdown);
 
 no warnings "uninitialized";
@@ -73,6 +74,22 @@ sub to_html {
     my $self = shift;
 
     return markdown( $self->text );
+}
+
+### Provide content in Pod.
+### ```
+###     my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+###
+###     my $pod   = $doc->to_pod();
+###     my @lines = split /\n/, $pod;
+###     is( $lines[0], '=head1 perlgib', 'Pod documentation' );
+### ```
+sub to_pod {
+    my $self = shift;
+
+    my $html = $self->to_html;
+
+    return Pod::HTML2Pod::convert( content => $html, a_href => 1 );
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -16,6 +16,7 @@ use English qw(-no_match_vars);
 use Mojo::Template;
 use Path::Tiny;
 use PPI;
+use Pod::HTML2Pod;
 use Text::Markdown qw(markdown);
 use Try::Tiny;
 
@@ -213,7 +214,7 @@ sub BUILD {
         }
     );
 
-    if ( $has_moose ) {
+    if ($has_moose) {
         apply_all_roles( $self, 'Perl::Gib::Module::Moose' );
         $self->attributes;
         $self->modifiers;
@@ -273,6 +274,23 @@ sub to_html {
     my $self = shift;
 
     return markdown( $self->to_markdown() );
+}
+
+### Provide documentation in Pod.
+###
+### ```
+###     my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+###
+###     my $pod   = $module->to_pod();
+###     my @lines = split /\n/, $pod;
+###     is( $lines[0], '=head1 Perl::Gib::Module', 'Pod documentation' );
+### ```
+sub to_pod {
+    my $self = shift;
+
+    my $html = $self->to_html;
+
+    return Pod::HTML2Pod::convert( content => $html, a_href => 1 );
 }
 
 ### Generate and run Perl module test scripts with

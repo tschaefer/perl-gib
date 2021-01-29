@@ -1,6 +1,6 @@
 package Perl::Gib;
 
-##! Generate Perl project HTML documentation and run module test scripts.
+##! Generate Perl project documentation and run module test scripts.
 ##!
 ##!     use Perl::Gib;
 ##!     my $perlgib = Perl::Gib->new();
@@ -34,20 +34,20 @@ no warnings "uninitialized";
 ### #[ignore(item)]
 ### List of processed Perl modules.
 has 'modules' => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Perl::Gib::Module]',
-    lazy    => 1,
-    builder => '_build_modules',
+    is       => 'ro',
+    isa      => 'ArrayRef[Perl::Gib::Module]',
+    lazy     => 1,
+    builder  => '_build_modules',
     init_arg => undef,
 );
 
 ### #[ignore(item)]
 ### List of processed Markdown files.
 has 'markdowns' => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Perl::Gib::Markdown]',
-    lazy    => 1,
-    builder => '_build_markdowns',
+    is       => 'ro',
+    isa      => 'ArrayRef[Perl::Gib::Markdown]',
+    lazy     => 1,
+    builder  => '_build_markdowns',
     init_arg => undef,
 );
 
@@ -205,6 +205,9 @@ sub _get_output_path {
     elsif ( $type eq 'markdown' ) {
         $file =~ s/\.pm/\.md/;
     }
+    elsif ( $type eq 'pod' ) {
+        $file =~ s/\.pm|\.md$/\.pod/;
+    }
 
     return ( path($file)->parent->canonpath, $file );
 }
@@ -328,6 +331,47 @@ sub markdown {
 
         path($dir)->mkpath;
         path($file)->spew( $object->to_markdown() );
+    }
+
+    dirmove( $self->working_path, $self->output_path );
+
+    return;
+}
+
+### Create output directory, generate Pod content and write it to files.
+### ```
+###     use File::Find;
+###     use Path::Tiny;
+###
+###     my $dir = Path::Tiny->tempdir->canonpath;
+###
+###     my $perlgib = Perl::Gib->new({output_path => $dir});
+###     $perlgib->pod();
+###
+###     my @wanted = (
+###         path( $dir, "Perl/Gib.pod" ),
+###         path( $dir, "Perl/Gib/Markdown.pod" ),
+###         path( $dir, "Perl/Gib/Module.pod" ),
+###         path( $dir, "Perl/Gib/Template.pod" ),
+###         path( $dir, "Perl/Gib/Usage.pod" ),
+###     );
+###
+###     my @docs;
+###     find( sub { push @docs, $File::Find::name if ( -f && /\.pod$/ ); }, $dir );
+###     @docs = sort @docs;
+###
+###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+### ```
+sub pod {
+    my $self = shift;
+
+    $self->working_path->mkpath;
+
+    foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
+        my ( $dir, $file ) = $self->_get_output_path( $object, 'pod' );
+
+        path($dir)->mkpath;
+        path($file)->spew( $object->to_pod() );
     }
 
     dirmove( $self->working_path, $self->output_path );
