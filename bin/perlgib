@@ -66,12 +66,14 @@ sub do_doc {
     my %formats = (
         'html'     => 1,
         'markdown' => 1,
+        'pod'      => 1,
         'all'      => 1,
     );
     print_usage() if ( !$formats{$format} );
 
     $perlgib->html()     if ( $format =~ /html|all/ );
     $perlgib->markdown() if ( $format =~ /markdown|all/ );
+    $perlgib->pod()      if ( $format =~ /pod|all/ );
 
     return;
 }
@@ -195,7 +197,7 @@ Build library documentation.
 
 Documentation output path, default doc in current working directory.
 
-=item --output-format html|markdown|all
+=item --output-format html|markdown|pod|all
 
 Documentation output format, default html.
 

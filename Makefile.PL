@@ -25,6 +25,7 @@ WriteMakefile(
         'MooseX::Types::Path::Tiny' => '0.012',
         'PPI'                       => '1.270',
         'Path::Tiny'                => '0.114',
+        'Pod::HTML2Pod',            => '4.05',
         'Readonly'                  => '2.05',
         'Term::ANSIColor'           => '5.01',
         'Test::Exception'           => '0.43',
