@@ -1,5 +1,6 @@
 
 bin/perlgib
+lib/Perl/Gib/Config.pm
 lib/Perl/Gib/Index.pm
 lib/Perl/Gib/Item/Attribute.pm
 lib/Perl/Gib/Item/Modifier.pm

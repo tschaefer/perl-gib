@@ -15,6 +15,15 @@ use Moose::Role;
 
 requires qw(_build_statement _build_description);
 
+### #[ignore(item]
+### Perl::Gib configuration object. [optional]
+has 'config' => (
+    is       => 'ro',
+    isa      => 'Perl::Gib::Config',
+    default  => sub { Perl::Gib::Config->instance() },
+    init_arg => undef,
+);
+
 ### List of DOM fragments with statement and comment block. [required]
 has 'fragment' => (
     is       => 'ro',
@@ -47,20 +56,6 @@ has 'line' => (
     lazy     => 1,
     builder  => '_build_line',
     init_arg => undef,
-);
-
-### Document ignored items. [optional]
-has 'document_ignored_items' => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => sub { 0 },
-);
-
-### Document private items. [optional]
-has 'document_private_items' => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
 );
 
 ### Trigger item creation.

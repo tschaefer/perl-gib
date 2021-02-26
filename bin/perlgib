@@ -14,6 +14,7 @@ use Time::HiRes qw(gettimeofday);
 use Try::Tiny;
 
 use Perl::Gib;
+use Perl::Gib::Config;
 
 $Term::ANSIColor::AUTORESET = 1;
 
@@ -48,7 +49,9 @@ sub new_perlgib {
         delete $opts{$key} if ( !defined $value );
     }
 
-    return Perl::Gib->new(%opts);
+    Perl::Gib::Config->initialize(%opts);
+
+    return Perl::Gib->new();
 }
 
 sub do_doc {

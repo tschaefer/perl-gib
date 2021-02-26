@@ -19,13 +19,18 @@ subtest 'html' => sub {
     use File::Find;
     use Path::Tiny;
 
+    use Perl::Gib::Config;
+
     my $dir = Path::Tiny->tempdir;
 
-    my $perlgib = Perl::Gib->new( { output_path => $dir } );
+    Perl::Gib::Config->initialize( output_path => $dir );
+
+    my $perlgib = Perl::Gib->new();
     $perlgib->html();
 
     my @wanted = (
         path( $dir, "Perl/Gib.html" ),
+        path( $dir, "Perl/Gib/Config.html" ),
         path( $dir, "Perl/Gib/Markdown.html" ),
         path( $dir, "Perl/Gib/Module.html" ),
         path( $dir, "Perl/Gib/Template.html" ),
@@ -40,19 +45,26 @@ subtest 'html' => sub {
     is_deeply( \@docs, \@wanted, 'all docs generated' );
 
     $dir->remove_tree( { safe => 0 } );
+
+    Perl::Gib::Config->_clear_instance();
 };
 
 subtest 'markdown' => sub {
     use File::Find;
     use Path::Tiny;
 
+    use Perl::Gib::Config;
+
     my $dir = Path::Tiny->tempdir;
 
-    my $perlgib = Perl::Gib->new( { output_path => $dir } );
+    Perl::Gib::Config->initialize( output_path => $dir );
+
+    my $perlgib = Perl::Gib->new();
     $perlgib->markdown();
 
     my @wanted = (
         path( $dir, "Perl/Gib.md" ),
+        path( $dir, "Perl/Gib/Config.md" ),
         path( $dir, "Perl/Gib/Markdown.md" ),
         path( $dir, "Perl/Gib/Module.md" ),
         path( $dir, "Perl/Gib/Template.md" ),
@@ -66,19 +78,26 @@ subtest 'markdown' => sub {
     is_deeply( \@docs, \@wanted, 'all docs generated' );
 
     $dir->remove_tree( { safe => 0 } );
+
+    Perl::Gib::Config->_clear_instance();
 };
 
 subtest 'pod' => sub {
     use File::Find;
     use Path::Tiny;
 
+    use Perl::Gib::Config;
+
     my $dir = Path::Tiny->tempdir;
 
-    my $perlgib = Perl::Gib->new( { output_path => $dir } );
+    Perl::Gib::Config->initialize( output_path => $dir );
+
+    my $perlgib = Perl::Gib->new();
     $perlgib->pod();
 
     my @wanted = (
         path( $dir, "Perl/Gib.pod" ),
+        path( $dir, "Perl/Gib/Config.pod" ),
         path( $dir, "Perl/Gib/Markdown.pod" ),
         path( $dir, "Perl/Gib/Module.pod" ),
         path( $dir, "Perl/Gib/Template.pod" ),
@@ -92,6 +111,8 @@ subtest 'pod' => sub {
     is_deeply( \@docs, \@wanted, 'all docs generated' );
 
     $dir->remove_tree( { safe => 0 } );
+
+    Perl::Gib::Config->_clear_instance();
 };
 
 subtest 'test' => sub {

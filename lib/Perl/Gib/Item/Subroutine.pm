@@ -30,7 +30,7 @@ sub _build_statement {
 
     my $name = $self->fragment->[0]->name;
     croak( sprintf "Subroutine is private: %s", $name )
-      if ( $name =~ /^_/ && !$self->document_private_items );
+      if ( $name =~ /^_/ && !$self->config->document_private_items );
 
     my @params;
     my $get_params = sub {
@@ -47,7 +47,7 @@ sub _build_statement {
     return sprintf "sub %s(%s)", $self->fragment->[0]->name, join ', ', @params;
 }
 
-### Create item description string by parsing comment block. By default 
+### Create item description string by parsing comment block. By default
 ### subroutines starting with a pseudo function `#[ignore(item)]` in comment
 ### block are ignored; the class will croak.
 sub _build_description {
@@ -58,7 +58,7 @@ sub _build_description {
 
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
         croak( sprintf "Subroutine ignored by comment: %s", $self->statement )
-          if ( !$self->document_ignored_items );
+          if ( !$self->config->document_ignored_items );
 
         shift @fragment;
     }

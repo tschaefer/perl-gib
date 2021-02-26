@@ -73,9 +73,8 @@ sub _build_attributes {
 
                 my $attribute = try {
                     Perl::Gib::Item::Attribute->new(
-                        fragment               => \@fragment,
-                        document_private_items => $self->document_private_items,
-                        document_ignored_items => $self->document_ignored_items
+                        fragment => \@fragment,
+                        config   => $self->config,
                     );
                 }
                 catch {
@@ -126,9 +125,8 @@ sub _build_modifiers {
 
                 my $modifier = try {
                     Perl::Gib::Item::Modifier->new(
-                        fragment               => \@fragment,
-                        document_private_items => $self->document_private_items,
-                        document_ignored_items => $self->document_ignored_items
+                        fragment => \@fragment,
+                        config   => $self->config,
                     );
                 }
                 catch {

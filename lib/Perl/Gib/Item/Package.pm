@@ -21,7 +21,7 @@ sub _build_statement {
     return $self->fragment->[0]->namespace;
 }
 
-### Create item description string by parsing comment block. By default 
+### Create item description string by parsing comment block. By default
 ### packages starting with a pseudo function `#[ignore(item)]` in comment
 ### block are ignored; the class will croak.
 sub _build_description {
@@ -33,7 +33,7 @@ sub _build_description {
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
         croak( sprintf "Package / Module ignored by comment: %s",
             $self->statement )
-          if ( !$self->document_ignored_items );
+          if ( !$self->config->document_ignored_items );
 
         shift @fragment;
     }

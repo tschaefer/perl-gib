@@ -12,32 +12,28 @@ use MooseX::Types::Path::Tiny qw(AbsDir);
 use Path::Tiny;
 use Text::Markdown qw(markdown);
 
+use Perl::Gib::Config;
+
+### [ignore(item)]
+### Perl::Gib configuration object. [optional]
+has 'config' => (
+    is       => 'ro',
+    isa      => 'Perl::Gib::Config',
+    default  => sub { Perl::Gib::Config->instance() },
+    init_arg => undef,
+);
+
 ### List of processed Perl modules. [required]
 has 'modules' => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Perl::Gib::Module]',
+    is       => 'ro',
+    isa      => 'ArrayRef[Perl::Gib::Module]',
     required => 1,
 );
 
 ### List of processed Markdown files. [required]
 has 'markdowns' => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Perl::Gib::Markdown]',
-    required => 1,
-);
-
-### Path to directory with Perl modules and Markdown files. [required]
-has 'library_path' => (
     is       => 'ro',
-    isa      => AbsDir,
-    required => 1,
-    coerce   => 1,
-);
-
-### Library name. [required]
-has 'library_name' => (
-    is       => 'ro',
-    isa      => 'Str',
+    isa      => 'ArrayRef[Perl::Gib::Markdown]',
     required => 1,
 );
 
@@ -60,7 +56,8 @@ sub _build_toc {
     my %toc;
     foreach my $object ( @{ $self->modules }, @{ $self->markdowns } ) {
         my $link =
-          path( $object->file )->relative( $self->library_path )->canonpath;
+          path( $object->file )->relative( $self->config->library_path )
+          ->canonpath;
         $link =~ s/\.pm$|\.md$/\.html/;
 
         my $topic = $link;
@@ -92,7 +89,7 @@ TEMPLATE
     return Mojo::Template->new()->vars(1)->render(
         $template,
         {
-            title => $self->library_name,
+            title => $self->config->library_name,
             toc   => $toc,
         }
     );

@@ -53,7 +53,7 @@ following help output.
                 Documentation output path, default doc in current working
                 directory.
 
-        --output-format html|markdown|all
+        --output-format html|markdown|pod|all
                 Documentation output format, default html.
 
         --document-private-items

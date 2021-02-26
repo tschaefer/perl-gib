@@ -95,7 +95,7 @@ sub render {
         $title = $self->content->package->statement;
     }
     else {
-        $title = $self->content->library_name;
+        $title = $self->content->config->library_name;
     }
 
     return Mojo::Template->new()->vars(1)->render(

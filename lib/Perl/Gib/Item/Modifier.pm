@@ -23,7 +23,7 @@ sub _build_statement {
 
     my $name = $fragment->child(1);
     croak( sprintf "Modifier is private: %s", $name )
-      if ( $name =~ /^['"]_/ && !$self->document_private_items );
+      if ( $name =~ /^['"]_/ && !$self->config->document_private_items );
 
     my @elements  = $fragment->elements;
     my $statement = join ' ', @elements[ 0, 1 ];
@@ -31,7 +31,7 @@ sub _build_statement {
     return $statement;
 }
 
-### Create item description string by parsing comment block. By default 
+### Create item description string by parsing comment block. By default
 ### method modifiers starting with a pseudo function `#[ignore(item)]` in
 ### comment block are ignored; the class will croak.
 sub _build_description {
@@ -42,7 +42,7 @@ sub _build_description {
 
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
         croak( sprintf "Modifier ignored by comment: %s", $self->statement )
-          if ( !$self->document_ignored_items );
+          if ( !$self->config->document_ignored_items );
 
         shift @fragment;
     }

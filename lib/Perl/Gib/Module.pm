@@ -20,10 +20,20 @@ use Pod::HTML2Pod;
 use Text::Markdown qw(markdown);
 use Try::Tiny;
 
+use Perl::Gib::Config;
 use Perl::Gib::Item::Package;
 use Perl::Gib::Item::Subroutine;
 
 no warnings "uninitialized";
+
+### #[ignore(item)
+### Perl::Gib configuration object. [optional]
+has 'config' => (
+    is       => 'ro',
+    isa      => 'Perl::Gib::Config',
+    default  => sub { Perl::Gib::Config->instance() },
+    init_arg => undef,
+);
 
 ### Path to Perl module file. [required]
 has 'file' => (
@@ -61,20 +71,6 @@ has 'subroutines' => (
     lazy     => 1,
     builder  => '_build_subroutines',
     init_arg => undef,
-);
-
-### Document private items. [optional]
-has 'document_private_items' => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => sub { 0 },
-);
-
-### Document ignored items. [optional]
-has 'document_ignored_items' => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => sub { 0 },
 );
 
 ### Parse file with PPI and return DOM. Prune empty lines and
@@ -136,9 +132,8 @@ sub _build_package {
       if ( !@fragment );
 
     return Perl::Gib::Item::Package->new(
-        fragment               => \@fragment,
-        document_private_items => $self->document_private_items,
-        document_ignored_items => $self->document_ignored_items,
+        fragment => \@fragment,
+        config   => $self->config,
     );
 }
 
@@ -170,9 +165,8 @@ sub _build_subroutines {
 
                 my $sub = try {
                     Perl::Gib::Item::Subroutine->new(
-                        fragment               => \@fragment,
-                        document_private_items => $self->document_private_items,
-                        document_ignored_items => $self->document_ignored_items
+                        fragment => \@fragment,
+                        config   => $self->config,
                     );
                 }
                 catch {

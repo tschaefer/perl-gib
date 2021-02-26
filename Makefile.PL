@@ -23,6 +23,7 @@ WriteMakefile(
         'Mojolicious'               => '8.57',
         'Moose'                     => '2.2012',
         'MooseX::Types::Path::Tiny' => '0.012',
+        'MooseX::Singleton'         => '0.30',
         'PPI'                       => '1.270',
         'Path::Tiny'                => '0.114',
         'Pod::HTML2Pod',            => '4.05',
