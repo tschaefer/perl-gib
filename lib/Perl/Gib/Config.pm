@@ -11,7 +11,6 @@ package Perl::Gib::Config;
 ##!     my $perlgib = Perl::Gib->new();
 ##!     $perlgib->doc();
 
-
 use strict;
 use warnings;
 

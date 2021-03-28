@@ -135,7 +135,6 @@ sub _get_resource_path {
           path( $path, 'templates', 'gib.index.html.ep' ),
         'out:assets'         => path( $self->working_path, 'assets' ),
         'out:index:html'     => path( $self->working_path, 'index.html' ),
-        'out:index:markdown' => path( $self->working_path, 'index.md' ),
     );
     my $resource = $resources{$label};
 
@@ -149,6 +148,7 @@ sub _get_resource_path {
 ###
 ### * html => `.html`
 ### * markdown => `.md`
+### * pod => `.pod`
 sub _get_output_path {
     my ( $self, $object, $type ) = @_;
 
@@ -159,13 +159,13 @@ sub _get_output_path {
     $file =~ s/$lib/$working/;
 
     if ( $type eq 'html' ) {
-        $file =~ s/\.pm|\.md$/\.html/;
+        $file =~ s/\.pm$|\.md$/\.html/;
     }
     elsif ( $type eq 'markdown' ) {
-        $file =~ s/\.pm/\.md/;
+        $file =~ s/\.pm$/\.md/;
     }
     elsif ( $type eq 'pod' ) {
-        $file =~ s/\.pm|\.md$/\.pod/;
+        $file =~ s/\.pm$|\.md$/\.pod/;
     }
 
     return ( path($file)->parent->canonpath, $file );
@@ -215,7 +215,6 @@ sub html {
         my $index = Perl::Gib::Index->new(
             modules   => $self->modules,
             markdowns => $self->markdowns,
-            config    => $self->config,
         );
 
         my $template = $self->_get_resource_path('lib:templates:index');

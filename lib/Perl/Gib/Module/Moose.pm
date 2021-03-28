@@ -72,10 +72,7 @@ sub _build_attributes {
                 @fragment = reverse @fragment;
 
                 my $attribute = try {
-                    Perl::Gib::Item::Attribute->new(
-                        fragment => \@fragment,
-                        config   => $self->config,
-                    );
+                    Perl::Gib::Item::Attribute->new( fragment => \@fragment, );
                 }
                 catch {
                     croak($_)
@@ -124,10 +121,7 @@ sub _build_modifiers {
                 @fragment = reverse @fragment;
 
                 my $modifier = try {
-                    Perl::Gib::Item::Modifier->new(
-                        fragment => \@fragment,
-                        config   => $self->config,
-                    );
+                    Perl::Gib::Item::Modifier->new( fragment => \@fragment, );
                 }
                 catch {
                     croak($_)

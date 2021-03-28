@@ -26,7 +26,7 @@ use Perl::Gib::Item::Subroutine;
 
 no warnings "uninitialized";
 
-### #[ignore(item)
+### #[ignore(item)]
 ### Perl::Gib configuration object. [optional]
 has 'config' => (
     is       => 'ro',
@@ -131,10 +131,7 @@ sub _build_package {
     croak( sprintf "Module does not contain package: %s", $self->file )
       if ( !@fragment );
 
-    return Perl::Gib::Item::Package->new(
-        fragment => \@fragment,
-        config   => $self->config,
-    );
+    return Perl::Gib::Item::Package->new( fragment => \@fragment, );
 }
 
 ### Find subroutine statements and belonging comment block in DOM and create
@@ -164,10 +161,7 @@ sub _build_subroutines {
                 @fragment = reverse @fragment;
 
                 my $sub = try {
-                    Perl::Gib::Item::Subroutine->new(
-                        fragment => \@fragment,
-                        config   => $self->config,
-                    );
+                    Perl::Gib::Item::Subroutine->new( fragment => \@fragment, );
                 }
                 catch {
                     croak($_)
@@ -283,6 +277,10 @@ sub to_pod {
     my $self = shift;
 
     my $html = $self->to_html;
+
+    # see Pod::HTML2POD 'Use "<h1>" and "<h2>" for headings.'
+    $html =~ s/<h2>/<h1>/gm;
+    $html =~ s/<h3>/<h2>/gm;
 
     return Pod::HTML2Pod::convert( content => $html, a_href => 1 );
 }
