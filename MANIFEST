@@ -1,5 +1,9 @@
 
 bin/perlgib
+lib/Perl/Gib/App.pm
+lib/Perl/Gib/App/CLI.pm
+lib/Perl/Gib/App/CLI/Doc.pm
+lib/Perl/Gib/App/CLI/Test.pm
 lib/Perl/Gib/Config.pm
 lib/Perl/Gib/Index.pm
 lib/Perl/Gib/Item/Attribute.pm
@@ -37,3 +41,5 @@ t/03_attribute.t
 t/04_modifier.t
 t/05_package.t
 t/06_subroutine.t
+t/07_app.t
+t/08_cli.t

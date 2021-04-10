@@ -102,4 +102,6 @@ sub to_html {
     return markdown( $self->to_markdown() );
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

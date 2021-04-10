@@ -180,7 +180,7 @@ sub _get_output_path {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->initialize(output_path => $dir);
 ###
@@ -189,6 +189,8 @@ sub _get_output_path {
 ###
 ###     my @wanted = (
 ###         path( $dir, "Perl/Gib.html" ),
+###         path( $dir, "Perl/Gib/App.html" ),
+###         path( $dir, "Perl/Gib/App/CLI.html" ),
 ###         path( $dir, "Perl/Gib/Config.html" ),
 ###         path( $dir, "Perl/Gib/Markdown.html" ),
 ###         path( $dir, "Perl/Gib/Module.html" ),
@@ -202,6 +204,8 @@ sub _get_output_path {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```
@@ -268,7 +272,7 @@ sub test {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->new(output_path => $dir);
 ###
@@ -277,6 +281,8 @@ sub test {
 ###
 ###     my @wanted = (
 ###         path( $dir, "Perl/Gib.md" ),
+###         path( $dir, "Perl/Gib/App.md" ),
+###         path( $dir, "Perl/Gib/App/CLI.md" ),
 ###         path( $dir, "Perl/Gib/Config.md" ),
 ###         path( $dir, "Perl/Gib/Markdown.md" ),
 ###         path( $dir, "Perl/Gib/Module.md" ),
@@ -289,6 +295,8 @@ sub test {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```
@@ -316,7 +324,7 @@ sub markdown {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->new(output_path => $dir);
 ###
@@ -325,6 +333,8 @@ sub markdown {
 ###
 ###     my @wanted = (
 ###         path( $dir, "Perl/Gib.pod" ),
+###         path( $dir, "Perl/Gib/App.pod" ),
+###         path( $dir, "Perl/Gib/App/CLI.pod" ),
 ###         path( $dir, "Perl/Gib/Config.pod" ),
 ###         path( $dir, "Perl/Gib/Markdown.pod" ),
 ###         path( $dir, "Perl/Gib/Module.pod" ),
@@ -337,6 +347,8 @@ sub markdown {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```

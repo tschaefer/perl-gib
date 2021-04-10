@@ -1,8 +1,6 @@
 ## no critic
 use Test::More;
 
-use Try::Tiny;
-
 subtest 'class' => sub {
     use Test::Moose::More;
 
@@ -67,6 +65,7 @@ subtest 'documentation' => sub {
 
 subtest 'test' => sub {
     use File::Spec;
+    use Try::Tiny;
 
     use Perl::Gib::Module;
 
