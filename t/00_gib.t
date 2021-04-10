@@ -30,6 +30,9 @@ subtest 'html' => sub {
 
     my @wanted = (
         path( $dir, "Perl/Gib.html" ),
+        path( $dir, "Perl/Gib/App.html" ),
+        path( $dir, "Perl/Gib/App/Doc.html" ),
+        path( $dir, "Perl/Gib/App/Test.html" ),
         path( $dir, "Perl/Gib/Config.html" ),
         path( $dir, "Perl/Gib/Markdown.html" ),
         path( $dir, "Perl/Gib/Module.html" ),
@@ -64,6 +67,9 @@ subtest 'markdown' => sub {
 
     my @wanted = (
         path( $dir, "Perl/Gib.md" ),
+        path( $dir, "Perl/Gib/App.md" ),
+        path( $dir, "Perl/Gib/App/Doc.md" ),
+        path( $dir, "Perl/Gib/App/Test.md" ),
         path( $dir, "Perl/Gib/Config.md" ),
         path( $dir, "Perl/Gib/Markdown.md" ),
         path( $dir, "Perl/Gib/Module.md" ),
@@ -97,6 +103,9 @@ subtest 'pod' => sub {
 
     my @wanted = (
         path( $dir, "Perl/Gib.pod" ),
+        path( $dir, "Perl/Gib/App.pod" ),
+        path( $dir, "Perl/Gib/App/Doc.pod" ),
+        path( $dir, "Perl/Gib/App/Test.pod" ),
         path( $dir, "Perl/Gib/Config.pod" ),
         path( $dir, "Perl/Gib/Markdown.pod" ),
         path( $dir, "Perl/Gib/Module.pod" ),
