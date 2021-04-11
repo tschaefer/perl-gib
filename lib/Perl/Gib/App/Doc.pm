@@ -5,6 +5,7 @@ use warnings;
 
 use Moose::Role;
 
+use Carp qw(croak);
 use Getopt::Long qw(:config require_order);
 use List::Util qw(any);
 
@@ -32,14 +33,14 @@ sub _build_action_options {
         "document-private-items" => \$options{'document_private_items'},
         "document-ignored-items" => \$options{'document_ignored_items'},
         "no-html-index"          => \$options{'no_html_index'},
-    ) or exit $self->usage();
+    ) or croak();
 
     foreach my $key ( keys %options ) {
         delete $options{$key} if ( !$options{$key} );
     }
     $options{'output_format'} = $options{'output_format'} || 'html';
 
-    exit $self->usage()
+    croak(sprintf "Unknown output-format: %s", $options{'output_format'})
       if ( !any { $_ eq $options{'output_format'} } qw(html markdown pod all) );
 
     return \%options;

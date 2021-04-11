@@ -6,6 +6,7 @@ use warnings;
 use Moose;
 use Moose::Util qw(apply_all_roles);
 
+use Carp qw(croak);
 use Getopt::Long qw(:config require_order);
 use List::Util qw(any);
 use Pod::Usage;
@@ -21,23 +22,25 @@ $Term::ANSIColor::AUTORESET = 1;
 
 has 'action' => (
     is      => 'ro',
-    isa     => 'Str',
+    isa     => 'Maybe[Str]',
     lazy    => 1,
     builder => '_build_action',
 );
 
 has 'config' => (
-    is      => 'ro',
-    isa     => 'Perl::Gib::Config',
-    lazy    => 1,
-    builder => '_build_config',
+    is       => 'ro',
+    isa      => 'Perl::Gib::Config',
+    lazy     => 1,
+    builder  => '_build_config',
+    init_arg => undef,
 );
 
 has 'controller' => (
-    is      => 'ro',
-    isa     => 'Perl::Gib',
-    lazy    => 1,
-    builder => '_build_controller',
+    is       => 'ro',
+    isa      => 'Perl::Gib',
+    lazy     => 1,
+    builder  => '_build_controller',
+    init_arg => undef,
 );
 
 has 'options' => (
@@ -50,10 +53,13 @@ has 'options' => (
 sub _build_action {
     my $self = shift;
 
-    my $action = $ARGV[0] || '';
+    my $action = $ARGV[0];
+    return if ( !$action );
+
     $action =~ s/-/_/g;
 
-    exit $self->usage() if ( !any { $_ eq $action } qw(doc test) );
+    croak( sprintf "Unknown action: %s", $action )
+      if ( !any { $_ eq $action } qw(doc test) );
 
     shift @ARGV;
 
@@ -71,14 +77,14 @@ sub _build_options {
         "help|h"         => \$options{'help'},
         "man|m"          => \$options{'man'},
         "version|v"      => \$options{'version'},
-    ) or exit $self->usage();
+    ) or croak();
 
     foreach my $key ( keys %options ) {
         delete $options{$key} if ( !$options{$key} );
     }
     my $count = keys %options;
 
-    exit $self->usage()
+    croak('Too many options')
       if ( ( $options{'help'} || $options{'man'} || $options{'version'} )
         && $count > 1 );
 
@@ -134,13 +140,25 @@ sub version {
 sub BUILD {
     my $self = shift;
 
-    $self->options;
-    $self->action;
+    try {
+        croak('Missing action')
+          if ( !scalar keys %{ $self->options } && !$self->action );
 
-    my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
-    apply_all_roles( $self, $role );
+        if ( $self->action ) {
+            my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
+            apply_all_roles( $self, $role );
 
-    $self->action_options;
+            $self->action_options;
+        }
+    }
+    catch {
+        my $message = ( split / at/ )[0];
+
+        printf {*STDERR} "%s\n", $message if ($message);
+        print "\n";
+
+        exit $self->usage();
+    };
 
     return;
 }
@@ -148,10 +166,10 @@ sub BUILD {
 sub execute {
     my $self = shift;
 
-    my $info = $self->config->library_name eq 'Library'
+    my $info =
+        $self->config->library_name eq 'Library'
       ? $self->config->library_path
       : $self->config->library_name;
-
 
     printf "%s (%s)\n", colored( $self->action_info, 'green' ), $info;
     my $start = Time::HiRes::gettimeofday();
