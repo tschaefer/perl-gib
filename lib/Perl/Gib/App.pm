@@ -26,22 +26,6 @@ has 'action' => (
     builder => '_build_action',
 );
 
-has 'options' => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    lazy    => 1,
-    builder => '_build_options',
-    traits  => ['Hash'],
-    handles => {
-        set_option     => 'set',
-        get_option     => 'get',
-        has_no_options => 'is_empty',
-        num_options    => 'count',
-        delete_option  => 'delete',
-        option_pairs   => 'kv',
-    },
-);
-
 has 'config' => (
     is      => 'ro',
     isa     => 'Perl::Gib::Config',
@@ -49,19 +33,22 @@ has 'config' => (
     builder => '_build_config',
 );
 
-has 'perlgib' => (
+has 'controller' => (
     is      => 'ro',
     isa     => 'Perl::Gib',
     lazy    => 1,
-    builder => '_build_perlgib',
+    builder => '_build_controller',
 );
 
-use Data::Printer;
+has 'options' => (
+    is      => 'ro',
+    isa     => 'HashRef',
+    lazy    => 1,
+    builder => '_build_options',
+);
 
 sub _build_action {
     my $self = shift;
-
-    $self->options;
 
     my $action = $ARGV[0] || '';
     $action =~ s/-/_/g;
@@ -104,7 +91,7 @@ sub _build_config {
     return Perl::Gib::Config->initialize( %{ $self->options } );
 }
 
-sub _build_perlgib {
+sub _build_controller {
     my $self = shift;
 
     return Perl::Gib->new();
@@ -144,28 +131,33 @@ sub version {
     return 0;
 }
 
-sub run {
+sub BUILD {
     my $self = shift;
 
-    $self = Perl::Gib::App->new() if ( !Scalar::Util::blessed($self) );
-
-    return help()    if ( $self->options->{'help'} );
-    return man()     if ( $self->options->{'man'} );
-    return version() if ( $self->options->{'version'} );
+    $self->options;
+    $self->action;
 
     my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
     apply_all_roles( $self, $role );
 
-    my $lib =
-        $self->config->library_name eq 'Library'
+    $self->action_options;
+
+    return;
+}
+
+sub execute {
+    my $self = shift;
+
+    my $info = $self->config->library_name eq 'Library'
       ? $self->config->library_path
       : $self->config->library_name;
 
-    printf "%s (%s)\n", colored( $self->info, 'green' ), $lib;
+
+    printf "%s (%s)\n", colored( $self->action_info, 'green' ), $info;
     my $start = Time::HiRes::gettimeofday();
 
     my $rc = try {
-        $self->_execute();
+        $self->execute_action();
         return 0;
     }
     catch {
@@ -178,6 +170,18 @@ sub run {
       $stop - $start;
 
     return $rc;
+}
+
+sub run {
+    my $self = shift;
+
+    $self = Perl::Gib::App->new() if ( !Scalar::Util::blessed($self) );
+
+    return help()    if ( $self->options->{'help'} );
+    return man()     if ( $self->options->{'man'} );
+    return version() if ( $self->options->{'version'} );
+
+    return $self->execute();
 }
 
 __PACKAGE__->meta->make_immutable;

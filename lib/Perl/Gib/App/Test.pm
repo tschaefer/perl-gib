@@ -5,23 +5,22 @@ use warnings;
 
 use Moose::Role;
 
-has 'info' => (
-    is => 'ro',
-    isa => 'Str',
-    lazy => 1,
-    builder => '_build_info',
+has 'action_options' => (
+    is      => 'ro',
+    isa     => 'HashRef',
+    default => sub { return {}; },
 );
 
-sub _build_info {
+has 'action_info' => (
+    is      => 'ro',
+    isa     => 'Str',
+    default => 'Testing',
+);
+
+sub execute_action {
     my $self = shift;
 
-    return 'Testing';
-}
-
-sub _execute {
-    my $self = shift;
-
-    $self->perlgib->test();
+    $self->controller->test();
 
     return;
 }
