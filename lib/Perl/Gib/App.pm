@@ -94,7 +94,8 @@ sub _build_options {
 sub _build_config {
     my $self = shift;
 
-    return Perl::Gib::Config->initialize( %{ $self->options } );
+    return Perl::Gib::Config->initialize( %{ $self->options },
+        %{ $self->action_options } );
 }
 
 sub _build_controller {
@@ -110,6 +111,7 @@ sub help {
         -exitval  => 'NOEXIT',
         -verbose  => 99,
         -sections => 'SYNOPSIS|OPTIONS|PARAMETERS',
+        -input    => __FILE__,
     );
 
     return 0;
@@ -118,7 +120,11 @@ sub help {
 sub man {
     my $self = shift;
 
-    pod2usage( -exitval => 'NOEXIT', -verbose => 2 );
+    pod2usage(
+        -exitval => 'NOEXIT',
+        -verbose => 2,
+        -input   => __FILE__,
+    );
 
     return 0;
 }
@@ -126,7 +132,12 @@ sub man {
 sub usage {
     my $self = shift;
 
-    pod2usage( -exitval => 'NOEXIT', -verbose => 0 );
+    pod2usage(
+        -exitval => 'NOEXIT',
+        -verbose => 0,
+        -input   => __FILE__,
+        -output  => \*STDERR,
+    );
 
     return 1;
 }
@@ -205,3 +216,89 @@ sub run {
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+## no critic (Documentation)
+
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+perlgib - Perl's alternative documentation and test manager.
+
+=head1 SYNOPSIS
+
+perlgib --help|-h | --man|-m | --version|-v
+
+perlgib [OPTIONS] doc | test [OPTIONS]
+
+=head1 OPTIONS
+
+=head2 base
+
+=over 8
+
+=item --help|-h
+
+Print short usage help.
+
+=item --man|-m
+
+Print extended usage help.
+
+=item --version|-v
+
+Print version string.
+
+=item --library-path PATH
+
+Directory with documents (Perl modules, Markdown files) to process, default
+lib in current working directory.
+
+=item --library-name NAME
+
+Library name.
+
+=back
+
+=head2 doc
+
+Build library documentation.
+
+=over 8
+
+=item --output-path
+
+Documentation output path, default doc in current working directory.
+
+=item --output-format html|markdown|pod|all
+
+Documentation output format, default html.
+
+=item --document-private-items
+
+Document private items.
+
+=item --document-ignored-items
+
+Document ignored items (#[ignore(item)]).
+
+=item --no-html-index
+
+Prevent creating of html index.
+
+=back
+
+=head2 test
+
+Execute documentation tests.
+
+=head1 DESCRIPTION
+
+perlgib is Perl's alternative documentation and test manager.
+
+perlgib generates HTML and Markdown documentation and runs tests from Perl
+code comment lines.
+
+=cut
