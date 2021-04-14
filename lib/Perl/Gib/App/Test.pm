@@ -1,5 +1,7 @@
 package Perl::Gib::App::Test;
 
+##! #[ignore(item)]
+
 use strict;
 use warnings;
 
@@ -12,9 +14,10 @@ has 'action_options' => (
 );
 
 has 'action_info' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'Testing',
+    is       => 'ro',
+    isa      => 'Str',
+    default  => 'Testing',
+    init_arg => undef,
 );
 
 sub execute_action {

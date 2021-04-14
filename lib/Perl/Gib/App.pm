@@ -1,10 +1,17 @@
 package Perl::Gib::App;
 
+##! Perl::Gib command line application. Parse, validate command line options
+##! and execute action.
+##!
+##!     use Perl::Gib::App;
+##!
+##!     exit Perl::Gib::App->run();
+
 use strict;
 use warnings;
 
 use Moose;
-use Moose::Util qw(apply_all_roles);
+use Moose::Util qw(ensure_all_roles);
 
 use Carp qw(croak);
 use Getopt::Long qw(:config require_order);
@@ -20,6 +27,9 @@ use Perl::Gib::Config;
 
 $Term::ANSIColor::AUTORESET = 1;
 
+no warnings "uninitialized";
+
+### Action to execute.
 has 'action' => (
     is      => 'ro',
     isa     => 'Maybe[Str]',
@@ -27,6 +37,8 @@ has 'action' => (
     builder => '_build_action',
 );
 
+### #[ignore(item)]
+### Perl::Gib configuration object.
 has 'config' => (
     is       => 'ro',
     isa      => 'Perl::Gib::Config',
@@ -35,6 +47,8 @@ has 'config' => (
     init_arg => undef,
 );
 
+### #[ignore(item)]
+### Perl::Gib object.
 has 'controller' => (
     is       => 'ro',
     isa      => 'Perl::Gib',
@@ -43,6 +57,7 @@ has 'controller' => (
     init_arg => undef,
 );
 
+### Perl::Gib configuration options.
 has 'options' => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -50,6 +65,8 @@ has 'options' => (
     builder => '_build_options',
 );
 
+### Parse and validate command line action.
+### Croak if action is unknown.
 sub _build_action {
     my $self = shift;
 
@@ -66,6 +83,8 @@ sub _build_action {
     return $action;
 }
 
+### Parse and validate command line options.
+### Croak if option is unknown.
 sub _build_options {
     my $self = shift;
 
@@ -91,6 +110,7 @@ sub _build_options {
     return \%options;
 }
 
+### Initialze Perl::Gib configuration.
 sub _build_config {
     my $self = shift;
 
@@ -98,12 +118,14 @@ sub _build_config {
         %{ $self->action_options } );
 }
 
+### Create Perl::Gib object.
 sub _build_controller {
     my $self = shift;
 
     return Perl::Gib->new();
 }
 
+### Print help.
 sub help {
     my $self = shift;
 
@@ -114,9 +136,10 @@ sub help {
         -input    => __FILE__,
     );
 
-    return 0;
+    return 1;
 }
 
+### Print manpage.
 sub man {
     my $self = shift;
 
@@ -126,9 +149,10 @@ sub man {
         -input   => __FILE__,
     );
 
-    return 0;
+    return 1;
 }
 
+### Print usage.
 sub usage {
     my $self = shift;
 
@@ -142,14 +166,33 @@ sub usage {
     return 1;
 }
 
+### Print Perl::Gib version.
 sub version {
     printf "perlgib %s\n", $Perl::Gib::VERSION;
 
-    return 0;
+    return 1;
 }
 
-sub BUILD {
+### Execute action.
+sub execute {
     my $self = shift;
+
+    my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
+    ensure_all_roles( $self, $role );
+
+    $self->execute_action();
+
+    return;
+}
+
+### Run Perl::Gib command line application.
+### Parse, validate options and apply action role.
+sub run {
+    my $self = shift;
+
+    croak('Call with blessed object denied.') if ( Scalar::Util::blessed($self) );
+
+    $self = Perl::Gib::App->new();
 
     try {
         croak('Missing action')
@@ -157,7 +200,7 @@ sub BUILD {
 
         if ( $self->action ) {
             my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
-            apply_all_roles( $self, $role );
+            ensure_all_roles( $self, $role );
 
             $self->action_options;
         }
@@ -166,16 +209,14 @@ sub BUILD {
         my $message = ( split / at/ )[0];
 
         printf {*STDERR} "%s\n", $message if ($message);
-        print "\n";
+        print {*STDERR} "\n";
 
-        exit $self->usage();
+        $self->usage() && exit 1;
     };
 
-    return;
-}
-
-sub execute {
-    my $self = shift;
+    help()    && return 0 if ( $self->options->{'help'} );
+    man()     && return 0 if ( $self->options->{'man'} );
+    version() && return 0 if ( $self->options->{'version'} );
 
     my $info =
         $self->config->library_name eq 'Library'
@@ -186,31 +227,19 @@ sub execute {
     my $start = Time::HiRes::gettimeofday();
 
     my $rc = try {
-        $self->execute_action();
-        return 0;
+        $self->execute();
+        return 1;
     }
     catch {
         printf {*STDERR} "%s\n", ( split / at/ )[0];
-        return 1;
+        return 0;
     };
 
     my $stop = Time::HiRes::gettimeofday();
-    printf "%s in %.2fs\n", colored( 'Finished', $rc ? 'red' : 'green' ),
+    printf "%s in %.2fs\n", colored( 'Finished', $rc ? 'green' : 'red' ),
       $stop - $start;
 
-    return $rc;
-}
-
-sub run {
-    my $self = shift;
-
-    $self = Perl::Gib::App->new() if ( !Scalar::Util::blessed($self) );
-
-    return help()    if ( $self->options->{'help'} );
-    return man()     if ( $self->options->{'man'} );
-    return version() if ( $self->options->{'version'} );
-
-    return $self->execute();
+    return !$rc;
 }
 
 __PACKAGE__->meta->make_immutable;

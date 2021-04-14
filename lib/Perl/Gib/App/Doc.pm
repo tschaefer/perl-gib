@@ -1,5 +1,7 @@
 package Perl::Gib::App::Doc;
 
+##! #[ignore(item)]
+
 use strict;
 use warnings;
 
@@ -17,9 +19,10 @@ has 'action_options' => (
 );
 
 has 'action_info' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'Documenting',
+    is       => 'ro',
+    isa      => 'Str',
+    default  => 'Documenting',
+    init_arg => undef,
 );
 
 sub _build_action_options {

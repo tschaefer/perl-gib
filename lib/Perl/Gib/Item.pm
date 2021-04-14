@@ -15,7 +15,6 @@ use Moose::Role;
 
 requires qw(_build_statement _build_description);
 
-### #[ignore(item]
 ### Perl::Gib configuration object. [optional]
 has 'config' => (
     is       => 'ro',
