@@ -1,8 +1,9 @@
 
 bin/perlgib
 lib/Perl/Gib/App.pm
-lib/Perl/Gib/App/Doc.pm
-lib/Perl/Gib/App/Test.pm
+lib/Perl/Gib/App/CLI.pm
+lib/Perl/Gib/App/CLI/Doc.pm
+lib/Perl/Gib/App/CLI/Test.pm
 lib/Perl/Gib/Config.pm
 lib/Perl/Gib/Index.pm
 lib/Perl/Gib/Item/Attribute.pm

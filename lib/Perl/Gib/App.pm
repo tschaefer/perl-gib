@@ -1,44 +1,41 @@
 package Perl::Gib::App;
 
-##! Perl::Gib command line application. Parse, validate command line options
-##! and execute action.
+##! Perl::Gib application. Parse, validate command line options and execute
+##! action.
 ##!
 ##!     use Perl::Gib::App;
 ##!
-##!     exit Perl::Gib::App->run();
+##!     exit Perl::Gib::App->run(action => 'doc');
 
 use strict;
 use warnings;
 
 use Moose;
-use Moose::Util qw(ensure_all_roles);
 
-use Carp qw(croak);
-use Getopt::Long qw(:config require_order);
-use List::Util qw(any);
+use Moose::Util::TypeConstraints;
+
 use Pod::Usage;
-use Scalar::Util;
-use Term::ANSIColor;
-use Time::HiRes;
-use Try::Tiny;
 
 use Perl::Gib;
 use Perl::Gib::Config;
 
-$Term::ANSIColor::AUTORESET = 1;
-
 no warnings "uninitialized";
 
-### Action to execute.
+### Action to execute, required.
 has 'action' => (
-    is      => 'ro',
-    isa     => 'Maybe[Str]',
-    lazy    => 1,
-    builder => '_build_action',
+    is       => 'ro',
+    isa      => enum( [qw(doc test)] ),
+);
+
+### Perl::Gib configuration options.
+has 'options' => (
+    is       => 'ro',
+    isa      => 'HashRef',
+    default  => sub { return {}; },
 );
 
 ### #[ignore(item)]
-### Perl::Gib configuration object.
+### Perl::Gib configuration options, see [Perl::Gib::Config](../Config.html).
 has 'config' => (
     is       => 'ro',
     isa      => 'Perl::Gib::Config',
@@ -57,65 +54,11 @@ has 'controller' => (
     init_arg => undef,
 );
 
-### Perl::Gib configuration options.
-has 'options' => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    lazy    => 1,
-    builder => '_build_options',
-);
-
-### Parse and validate command line action.
-### Croak if action is unknown.
-sub _build_action {
-    my $self = shift;
-
-    my $action = $ARGV[0];
-    return if ( !$action );
-
-    $action =~ s/-/_/g;
-
-    croak( sprintf "Unknown action: %s", $action )
-      if ( !any { $_ eq $action } qw(doc test) );
-
-    shift @ARGV;
-
-    return $action;
-}
-
-### Parse and validate command line options.
-### Croak if option is unknown.
-sub _build_options {
-    my $self = shift;
-
-    my %options;
-
-    GetOptions(
-        "library-path=s" => \$options{'library_path'},
-        "library-name=s" => \$options{'library_name'},
-        "help|h"         => \$options{'help'},
-        "man|m"          => \$options{'man'},
-        "version|v"      => \$options{'version'},
-    ) or croak();
-
-    foreach my $key ( keys %options ) {
-        delete $options{$key} if ( !$options{$key} );
-    }
-    my $count = keys %options;
-
-    croak('Too many options')
-      if ( ( $options{'help'} || $options{'man'} || $options{'version'} )
-        && $count > 1 );
-
-    return \%options;
-}
-
 ### Initialze Perl::Gib configuration.
 sub _build_config {
     my $self = shift;
 
-    return Perl::Gib::Config->initialize( %{ $self->options },
-        %{ $self->action_options } );
+    return Perl::Gib::Config->initialize( %{ $self->options } );
 }
 
 ### Create Perl::Gib object.
@@ -126,6 +69,19 @@ sub _build_controller {
 }
 
 ### Print help.
+###
+### ```
+###     use File::Spec;
+###
+###     my $app = Perl::Gib::App->new();
+###
+###     open my $devnull, ">&STDOUT";
+###     open STDOUT, '>', File::Spec->devnull();
+###     my $rc = $app->help();
+###     open STDOUT, ">&", $devnull;
+###
+###     is( $rc, 1, 'Print help' );
+### ```
 sub help {
     my $self = shift;
 
@@ -140,6 +96,19 @@ sub help {
 }
 
 ### Print manpage.
+###
+### ```
+###     use File::Spec;
+###
+###     my $app = Perl::Gib::App->new();
+###
+###     open my $devnull, ">&STDOUT";
+###     open STDOUT, '>', File::Spec->devnull();
+###     my $rc = $app->man();
+###     open STDOUT, ">&", $devnull;
+###
+###     is( $rc, 1, 'Print manpage' );
+### ```
 sub man {
     my $self = shift;
 
@@ -153,6 +122,19 @@ sub man {
 }
 
 ### Print usage.
+###
+### ```
+###     use File::Spec;
+###
+###     my $app = Perl::Gib::App->new();
+###
+###     open my $devnull, ">&STERR";
+###     open STDERR, '>', File::Spec->devnull();
+###     my $rc = $app->usage();
+###     open STDERR, ">&", $devnull;
+###
+###     is( $rc, 1, 'Print usage' );
+### ```
 sub usage {
     my $self = shift;
 
@@ -173,73 +155,16 @@ sub version {
     return 1;
 }
 
-### Execute action.
-sub execute {
-    my $self = shift;
+### Run Perl::Gib application.
+sub run {
+    my ( $self, $action ) = @_;
 
-    my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
-    ensure_all_roles( $self, $role );
+    $self->config();
 
-    $self->execute_action();
+    $action //= $self->action;
+    $self->controller->$action();
 
     return;
-}
-
-### Run Perl::Gib command line application.
-### Parse, validate options and apply action role.
-sub run {
-    my $self = shift;
-
-    croak('Call with blessed object denied.') if ( Scalar::Util::blessed($self) );
-
-    $self = Perl::Gib::App->new();
-
-    try {
-        croak('Missing action')
-          if ( !scalar keys %{ $self->options } && !$self->action );
-
-        if ( $self->action ) {
-            my $role = sprintf "Perl::Gib::App::%s", ucfirst $self->action;
-            ensure_all_roles( $self, $role );
-
-            $self->action_options;
-        }
-    }
-    catch {
-        my $message = ( split / at/ )[0];
-
-        printf {*STDERR} "%s\n", $message if ($message);
-        print {*STDERR} "\n";
-
-        $self->usage() && exit 1;
-    };
-
-    help()    && return 0 if ( $self->options->{'help'} );
-    man()     && return 0 if ( $self->options->{'man'} );
-    version() && return 0 if ( $self->options->{'version'} );
-
-    my $info =
-        $self->config->library_name eq 'Library'
-      ? $self->config->library_path
-      : $self->config->library_name;
-
-    printf "%s (%s)\n", colored( $self->action_info, 'green' ), $info;
-    my $start = Time::HiRes::gettimeofday();
-
-    my $rc = try {
-        $self->execute();
-        return 1;
-    }
-    catch {
-        printf {*STDERR} "%s\n", ( split / at/ )[0];
-        return 0;
-    };
-
-    my $stop = Time::HiRes::gettimeofday();
-    printf "%s in %.2fs\n", colored( 'Finished', $rc ? 'green' : 'red' ),
-      $stop - $start;
-
-    return !$rc;
 }
 
 __PACKAGE__->meta->make_immutable;

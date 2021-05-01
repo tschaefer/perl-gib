@@ -1,4 +1,4 @@
-package Perl::Gib::App::Doc;
+package Perl::Gib::App::CLI::Doc;
 
 ##! #[ignore(item)]
 
@@ -52,7 +52,7 @@ sub _build_action_options {
 sub execute_action {
     my $self = shift;
 
-    my $format = $self->action_options->{'output_format'};
+    my $format = $self->action_options->{'output_format'} || 'html';
 
     $self->controller->html()     if ( $format =~ /html|all/ );
     $self->controller->markdown() if ( $format =~ /markdown|all/ );

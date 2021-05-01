@@ -6,6 +6,6 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use Perl::Gib::App;
+use Perl::Gib::App::CLI;
 
-exit Perl::Gib::App->run();
+exit Perl::Gib::App::CLI->run();

@@ -1,4 +1,4 @@
-package Perl::Gib::App::Test;
+package Perl::Gib::App::CLI::Test;
 
 ##! #[ignore(item)]
 
