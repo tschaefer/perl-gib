@@ -84,13 +84,9 @@ sub help {
         -output   => $fh,
     );
 
-    my $doc = '';
     $fh->seek(0, SEEK_SET);
-    while(<$fh>) {
-        $doc .= $_;
-    }
 
-    return $doc;
+    return <$fh>;
 }
 
 ### Return manpage.
@@ -106,13 +102,9 @@ sub man {
         -output  => $fh,
     );
 
-    my $doc = '';
     $fh->seek(0, SEEK_SET);
-    while(<$fh>) {
-        $doc .= $_;
-    }
 
-    return $doc;
+    return <$fh>;
 }
 
 ### Return usage message.
@@ -128,13 +120,9 @@ sub usage {
         -output  => $fh,
     );
 
-    my $doc = '';
     $fh->seek(0, SEEK_SET);
-    while(<$fh>) {
-        $doc .= $_;
-    }
 
-    return $doc;
+    return <$fh>;
 }
 
 ### Return Perl::Gib version string.
