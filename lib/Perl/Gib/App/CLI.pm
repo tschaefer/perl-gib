@@ -6,6 +6,10 @@ package Perl::Gib::App::CLI;
 ##!     use Perl::Gib::App::CLI;
 ##!
 ##!     exit Perl::Gib::App::CLI->run();
+##!
+##! ### Inheritance
+##!     Perl::Gib::App::CLI
+##!       isa Perl::Gib:App
 
 use strict;
 use warnings;
@@ -121,13 +125,17 @@ sub _parse {
 
         printf {*STDERR} "%s\n", $message if ($message);
         print {*STDERR} "\n";
+
         $self->usage();
 
         return 0;
     };
+    return $rc if (!$rc);
 
     if ( !scalar keys %{ $self->options } && !$self->action ) {
         print {*STDERR} "Missing action\n";
+        print {*STDERR} "\n";
+
         $self->usage();
 
         $rc = 0;
@@ -147,10 +155,11 @@ sub _setup {
         $self->config;
     }
     catch {
-        my $message = $_->type_constraint_message;
+        my $message = ( split / at/ )[0];
 
         printf {*STDERR} "%s\n", $message if ($message);
         print {*STDERR} "\n";
+
         $self->usage();
 
         return 0;
@@ -163,9 +172,10 @@ sub _setup {
 sub _execute {
     my $self = shift;
 
-    my $info = $self->config->library_name eq 'Library'
-        ? $self->config->library_path
-        : $self->config->library_name;
+    my $info =
+        $self->config->library_name eq 'Library'
+      ? $self->config->library_path
+      : $self->config->library_name;
 
     printf "%s (%s)\n", colored( $self->action_info, 'green' ), $info;
     my $start = Time::HiRes::gettimeofday();
@@ -186,14 +196,13 @@ sub _execute {
     return $rc;
 }
 
-### Run Perl::Gib command line application.
+### Run Perl::Gib command line application. Option (configuration) and action
+### arguments are used from command line.
 around 'run' => sub {
     my ( $orig, $self ) = @_;
 
-    croak('Call with blessed object denied.')
-      if ( Scalar::Util::blessed($self) );
-
-    $self = Perl::Gib::App::CLI->new();
+    $self = Perl::Gib::App::CLI->new()
+      if ( !Scalar::Util::blessed($self) );
 
     return 1 if ( !$self->_parse() );
 
@@ -204,6 +213,22 @@ around 'run' => sub {
     return 1 if ( !$self->_setup() );
 
     return !$self->_execute();
+};
+
+### Print message to stdout or stderr.
+around [qw(help man usage version)] => sub {
+    my ($orig, $self) = @_;
+
+    my $subroutine = (caller 2)[3];
+
+    if ($subroutine =~ /usage$/) {
+        print {*STDERR} $self->$orig();
+    }
+    else {
+        print $self->$orig();
+    }
+
+    return 1;
 };
 
 __PACKAGE__->meta->make_immutable;

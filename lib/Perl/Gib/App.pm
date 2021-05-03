@@ -5,7 +5,8 @@ package Perl::Gib::App;
 ##!
 ##!     use Perl::Gib::App;
 ##!
-##!     exit Perl::Gib::App->run(action => 'doc');
+##!     my $app = Perl::Gib::App->new();
+##!     $app->run('doc');
 
 use strict;
 use warnings;
@@ -14,6 +15,7 @@ use Moose;
 
 use Moose::Util::TypeConstraints;
 
+use File::Temp qw( :seekable );
 use Pod::Usage;
 
 use Perl::Gib;
@@ -68,91 +70,78 @@ sub _build_controller {
     return Perl::Gib->new();
 }
 
-### Print help.
-###
-### ```
-###     use File::Spec;
-###
-###     my $app = Perl::Gib::App->new();
-###
-###     open my $devnull, ">&STDOUT";
-###     open STDOUT, '>', File::Spec->devnull();
-###     my $rc = $app->help();
-###     open STDOUT, ">&", $devnull;
-###
-###     is( $rc, 1, 'Print help' );
-### ```
+### Return help message.
 sub help {
     my $self = shift;
+
+    my $fh = File::Temp->new();
 
     pod2usage(
         -exitval  => 'NOEXIT',
         -verbose  => 99,
         -sections => 'SYNOPSIS|OPTIONS|PARAMETERS',
         -input    => __FILE__,
+        -output   => $fh,
     );
 
-    return 1;
+    my $doc = '';
+    $fh->seek(0, SEEK_SET);
+    while(<$fh>) {
+        $doc .= $_;
+    }
+
+    return $doc;
 }
 
-### Print manpage.
-###
-### ```
-###     use File::Spec;
-###
-###     my $app = Perl::Gib::App->new();
-###
-###     open my $devnull, ">&STDOUT";
-###     open STDOUT, '>', File::Spec->devnull();
-###     my $rc = $app->man();
-###     open STDOUT, ">&", $devnull;
-###
-###     is( $rc, 1, 'Print manpage' );
-### ```
+### Return manpage.
 sub man {
     my $self = shift;
+
+    my $fh = File::Temp->new();
 
     pod2usage(
         -exitval => 'NOEXIT',
         -verbose => 2,
         -input   => __FILE__,
+        -output  => $fh,
     );
 
-    return 1;
+    my $doc = '';
+    $fh->seek(0, SEEK_SET);
+    while(<$fh>) {
+        $doc .= $_;
+    }
+
+    return $doc;
 }
 
-### Print usage.
-###
-### ```
-###     use File::Spec;
-###
-###     my $app = Perl::Gib::App->new();
-###
-###     open my $devnull, ">&STERR";
-###     open STDERR, '>', File::Spec->devnull();
-###     my $rc = $app->usage();
-###     open STDERR, ">&", $devnull;
-###
-###     is( $rc, 1, 'Print usage' );
-### ```
+### Return usage message.
 sub usage {
     my $self = shift;
+
+    my $fh = File::Temp->new();
 
     pod2usage(
         -exitval => 'NOEXIT',
         -verbose => 0,
         -input   => __FILE__,
-        -output  => \*STDERR,
+        -output  => $fh,
     );
 
-    return 1;
+    my $doc = '';
+    $fh->seek(0, SEEK_SET);
+    while(<$fh>) {
+        $doc .= $_;
+    }
+
+    return $doc;
 }
 
-### Print Perl::Gib version.
+### Return Perl::Gib version string.
 sub version {
-    printf "perlgib %s\n", $Perl::Gib::VERSION;
+    my $version = sprintf "perlgib %s\n", $Perl::Gib::VERSION;
 
-    return 1;
+    return $version;
 }
 
 ### Run Perl::Gib application.
