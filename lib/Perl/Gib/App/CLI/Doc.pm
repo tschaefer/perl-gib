@@ -1,6 +1,7 @@
 package Perl::Gib::App::CLI::Doc;
 
 ##! #[ignore(item)]
+##! Perl::Gib command line application extension `doc`.
 
 use strict;
 use warnings;
@@ -11,6 +12,7 @@ use Carp qw(croak);
 use Getopt::Long qw(:config require_order);
 use List::Util qw(any);
 
+### Perl::Gib configuration options, see [Perl::Gib::Config](../Config.html).
 has 'action_options' => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -18,6 +20,7 @@ has 'action_options' => (
     builder => '_build_action_options',
 );
 
+### Action information.
 has 'action_info' => (
     is       => 'ro',
     isa      => 'Str',
@@ -25,6 +28,8 @@ has 'action_info' => (
     init_arg => undef,
 );
 
+### Parse and validate action command line options.
+### Croak if option is unknown.
 sub _build_action_options {
     my $self = shift;
 
@@ -49,6 +54,7 @@ sub _build_action_options {
     return \%options;
 }
 
+### Generate documentation in given format, default `html`.
 sub execute_action {
     my $self = shift;
 
