@@ -41,3 +41,5 @@ t/03_attribute.t
 t/04_modifier.t
 t/05_package.t
 t/06_subroutine.t
+t/07_app.t
+t/08_cli.t
