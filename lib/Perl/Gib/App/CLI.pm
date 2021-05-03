@@ -42,7 +42,6 @@ has 'action' => (
     lazy     => 1,
     builder  => '_build_action',
     init_arg => undef,
-    required => 0,
 );
 
 ### #[ignore(item)]

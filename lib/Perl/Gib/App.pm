@@ -127,9 +127,9 @@ sub usage {
 
 ### Return Perl::Gib version string.
 sub version {
-    my $version = sprintf "perlgib %s\n", $Perl::Gib::VERSION;
+    my $self = shift;
 
-    return $version;
+    return sprintf "perlgib %s\n", $Perl::Gib::VERSION;
 }
 
 ### Run Perl::Gib application.
@@ -141,7 +141,7 @@ sub run {
     $action //= $self->action;
     $self->controller->$action();
 
-    return;
+    return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
