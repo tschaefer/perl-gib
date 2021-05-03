@@ -180,7 +180,7 @@ sub _get_output_path {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->initialize(output_path => $dir);
 ###
@@ -204,6 +204,8 @@ sub _get_output_path {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```
@@ -270,7 +272,7 @@ sub test {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->new(output_path => $dir);
 ###
@@ -293,6 +295,8 @@ sub test {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```
@@ -320,7 +324,7 @@ sub markdown {
 ###
 ###     use Perl::Gib::Config;
 ###
-###     my $dir = Path::Tiny->tempdir->canonpath;
+###     my $dir = Path::Tiny->tempdir;
 ###
 ###     Perl::Gib::Config->new(output_path => $dir);
 ###
@@ -343,6 +347,8 @@ sub markdown {
 ###     @docs = sort @docs;
 ###
 ###     is_deeply( \@docs, \@wanted, 'all docs generated' );
+###
+###     $dir->remove_tree( { safe => 0 } );
 ###
 ###     Perl::Gib::Config->_clear_instance();
 ### ```
