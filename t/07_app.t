@@ -1,11 +1,8 @@
 ## no critic
 use Test::More;
 
-use Try::Tiny;
-
 subtest 'class' => sub {
     use Test::Moose::More;
-    use Test::Exception;
 
     my $class = 'Perl::Gib::App';
 
@@ -16,67 +13,50 @@ subtest 'class' => sub {
     has_method_ok( $class, qw(help man run usage version) );
 };
 
-subtest 'help' => sub {
-    use File::Spec;
-
+subtest 'helper' => sub {
     use Perl::Gib::App;
 
-    my $app = Perl::Gib::App->new();
+    ok( defined Perl::Gib::App->new()->help(),    "Help returned message." );
+    ok( defined Perl::Gib::App->new()->man(),     "Man returned message." );
+    ok( defined Perl::Gib::App->new()->usage(),   "Usage returned message." );
+    ok( defined Perl::Gib::App->new()->version(), "Version returned message." );
 
-    open my $devnull, ">&STDOUT";
-    open STDOUT, '>', File::Spec->devnull();
-    my $rc = $app->help();
-    open STDOUT, ">&", $devnull;
-
-    is( $rc, 1, 'Print help' );
 };
 
-subtest 'man' => sub {
-    use File::Spec;
-
-    use Perl::Gib::App;
-
-    my $app = Perl::Gib::App->new();
-
-    open my $devnull, ">&STDOUT";
-    open STDOUT, '>', File::Spec->devnull();
-    my $rc = $app->man();
-    open STDOUT, ">&", $devnull;
-
-    is( $rc, 1, 'Print manpage' );
-};
-
-subtest 'usage' => sub {
-    use File::Spec;
-
-    use Perl::Gib::App;
-
-    my $app = Perl::Gib::App->new();
-
-    open my $devnull, ">&STDERR";
-    open STDERR, '>', File::Spec->devnull();
-    my $rc = $app->usage();
-    open STDERR, ">&", $devnull;
-
-    is( $rc, 1, 'Print usage' );
-};
-
-subtest 'run' => sub {
+subtest 'exceptions' => sub {
     use Test::Exception;
-
-    use Path::Tiny;
-    use Try::Tiny;
 
     use Perl::Gib::App;
     use Perl::Gib::Config;
 
-    my $app = Perl::Gib::App->new();
     throws_ok(
-        sub { $app->run(); },
+        sub {
+            Perl::Gib::App->new()->run();
+        },
         qr/Can't locate object method ""/,
-        'Run throws exception on missing action.'
+        'Run throws excpetion on missing action.'
     );
     Perl::Gib::Config->_clear_instance();
+
+    throws_ok(
+        sub {
+            Perl::Gib::App->new()->run('foo');
+        },
+        qr/Can't locate object method "foo"/,
+        'Run throws excpetion on unknown action.'
+    );
+    Perl::Gib::Config->_clear_instance();
+
+    throws_ok(
+        sub {
+            Perl::Gib::App->new( action => 'foo' )->run();
+        },
+        'Moose::Exception::ValidationFailedForInlineTypeConstraint',
+        'App throws excpetion on unknown action attribute.'
+
+    );
+    Perl::Gib::Config->_clear_instance();
+
 };
 
 done_testing();

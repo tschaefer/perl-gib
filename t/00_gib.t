@@ -1,8 +1,6 @@
 ## no critic
 use Test::More;
 
-use Try::Tiny;
-
 subtest 'class' => sub {
     use Test::Moose::More;
 
@@ -12,7 +10,7 @@ subtest 'class' => sub {
     is_class_ok($class);
     is_immutable_ok($class);
     check_sugar_ok($class);
-    has_method_ok( $class, qw(html markdown test) );
+    has_method_ok( $class, qw(html markdown pod test) );
 };
 
 subtest 'html' => sub {
@@ -123,6 +121,7 @@ subtest 'pod' => sub {
 
 subtest 'test' => sub {
     use File::Spec;
+    use Try::Tiny;
 
     use Perl::Gib;
 
