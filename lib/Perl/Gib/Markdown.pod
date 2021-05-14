@@ -1,0 +1,49 @@
+=head1 Perl::Gib::Markdown
+
+Read Markdown file.
+
+=head1 Attributes
+
+=head2 C<has 'file'; #19>
+
+Path to Markdown file. [required]
+
+=head1 Methods
+
+=head2 C<sub to_markdown($self); #59>
+
+Return Markdown.
+
+ my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+ 
+ my $markdown = $doc->to_markdown();
+ my @lines    = split /\n/, $markdown;
+ is( $lines[0], '# perlgib', 'Markdown documentation' );
+
+=head2 C<sub to_html($self); #73>
+
+Provide content in HTML.
+
+ my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+ 
+ my $html  = $doc->to_html();
+ my @lines = split /\n/, $html;
+ is( $lines[0], '<h1>perlgib</h1>', 'HTML documentation' );
+
+=head2 C<sub to_pod($self); #87>
+
+Provide content in Pod.
+
+ my $doc = Perl::Gib::Markdown->new( { file => 'lib/Perl/Gib/Usage.md' } );
+ 
+ my $pod   = $doc->to_pod();
+ my @lines = split /\n/, $pod;
+ is( $lines[0], '=head1 perlgib', 'Pod documentation' );
+
+=cut
+
+#Pod::HTML2Pod conversion notes:
+# 1119 bytes of input
+#Fri May 14 09:18:13 2021 tschaefer
+# No a_name switch not specified, so will not try to render <a name='...'>
+# Will try to render <a href='...'>

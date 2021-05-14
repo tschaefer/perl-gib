@@ -1,0 +1,64 @@
+=head1 Perl::Gib::Config
+
+Singleton (https://metacpan.org/pod/MooseX::Singleton) configuration
+object.
+
+ use Perl::Gib;
+ use Perl::Gib::Config;
+ 
+ Perl::Gib::Config->initialize(output_path => '/var/www/docs');
+ 
+ my $perlgib = Perl::Gib->new();
+ $perlgib->doc();
+
+=head1 Attributes
+
+=head2 C<has 'library_path'; #25>
+
+Path to directory with Perl modules and Markdown files. [optional]
+
+=over
+
+Default C<lib> in current directory.
+
+=back
+
+=head2 C<has 'output_path'; #34>
+
+Output path for documentation. [optional]
+
+=over
+
+Default C<doc> in current directory.
+
+=back
+
+=head2 C<has 'document_private_items'; #42>
+
+Document private items. [optional]
+
+=head2 C<has 'library_name'; #50>
+
+Library name, used as index header. [optional]
+
+=over
+
+Default C<Library.>
+
+=back
+
+=head2 C<has 'no_html_index'; #57>
+
+Prevent creating html index. [optional]
+
+=head2 C<has 'document_ignored_items'; #64>
+
+Document ignored items. [optional]
+
+=cut
+
+#Pod::HTML2Pod conversion notes:
+# 1186 bytes of input
+#Fri May 14 09:18:13 2021 tschaefer
+# No a_name switch not specified, so will not try to render <a name='...'>
+# Will try to render <a href='...'>

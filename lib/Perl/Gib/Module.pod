@@ -1,0 +1,70 @@
+=head1 Perl::Gib::Module
+
+Parse (https://metacpan.org/pod/PPI) Perl module and process data for
+documentation and tests.
+
+=head1 Attributes
+
+=head2 C<has 'file'; #39>
+
+Path to Perl module file. [required]
+
+=head1 Methods
+
+=head2 C<sub to_markdown($self); #223>
+
+Provide documentation in Markdown.
+
+ my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+ 
+ my $markdown = $module->to_markdown();
+ my @lines    = split /\n/, $markdown;
+ is( $lines[0], '# Perl::Gib::Module', 'Markdown documentation' );
+
+=head2 C<sub to_html($self); #261>
+
+Provide documentation in HTML.
+
+ my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+ 
+ my $html = $module->to_html();
+ my @lines    = split /\n/, $html;
+ is( $lines[0], '<h1>Perl::Gib::Module</h1>', 'HTML documentation' );
+
+=head2 C<sub to_pod($self); #276>
+
+Provide documentation in Pod.
+
+ my $module = Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Module.pm' } );
+ 
+ my $pod   = $module->to_pod();
+ my @lines = split /\n/, $pod;
+ is( $lines[0], '=head1 Perl::Gib::Module', 'Pod documentation' );
+
+=head2 C<sub run_test($self, $library); #306>
+
+Generate and run Perl module test scripts with prove
+(https://metacpan.org/pod/distribution/Test-Harness/bin/prove).
+Optional add C<$library> to the path for the tests.
+
+=head2 Example of produced module test script
+
+ use Animal::Horse;
+ use Test::More;
+ 
+ subtest 'trot' => sub {
+     ok(1);
+ };
+ subtest 'gallop' {
+     ok(2 > 1);
+ };
+ 
+ done_testing();
+
+=cut
+
+#Pod::HTML2Pod conversion notes:
+# 1754 bytes of input
+#Fri May 14 09:18:13 2021 tschaefer
+# No a_name switch not specified, so will not try to render <a name='...'>
+# Will try to render <a href='...'>

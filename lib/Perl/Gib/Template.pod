@@ -1,0 +1,65 @@
+=head1 Perl::Gib::Template
+
+Render object documentation in HTML with given template
+(https://metacpan.org/pod/Mojo::Template) file.
+
+=head1 Attributes
+
+=head2 C<has 'file'; #22>
+
+Path to template file. [required]
+
+=head2 C<has 'content'; #30>
+
+Perl::Gib object (Perl module, Markdown file, index). [required]
+
+=head2 C<has 'assets'; #37>
+
+Any assets. C<[Str|ArrayRef|HashRef]> [optional]
+
+=head1 Methods
+
+=head2 C<sub render($self); #85>
+
+Render content and return HTML documentation.
+
+Following named variables pass data to the model.
+
+=over
+
+=item * B<title> - dependent on object type,
+
+=item * B<content> - object HTML documentation,
+
+=item * B<assets> - any data.
+
+=back
+
+For assets data types see attribute of the same name.
+
+ use Perl::Gib::Module;
+ 
+ my $module   = Perl::Gib::Module->new( file => 'lib/Perl/Gib/Module.pm' );
+ my $template = Perl::Gib::Template->new(
+     file   => 'lib/Perl/Gib/resources/templates/gib.html.ep',
+     assets => {
+         path  => 'lib/Perl/Gib/resources/assets',
+         index => '../../index.html',
+     },
+     content => $module,
+ );
+ my $html  = $template->render();
+ my @lines = split /\n/, $html;
+ is( $lines[0], '<!doctype html>', 'HTML documentation' );
+
+=head2 C<sub write($self, $file); #112>
+
+Write rendered content to C<$file>.
+
+=cut
+
+#Pod::HTML2Pod conversion notes:
+# 1523 bytes of input
+#Fri May 14 09:18:13 2021 tschaefer
+# No a_name switch not specified, so will not try to render <a name='...'>
+# Will try to render <a href='...'>
