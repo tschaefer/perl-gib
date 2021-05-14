@@ -20,6 +20,8 @@ WriteMakefile(
     'NAME'      => 'Perl::Gib',
     'PREREQ_PM' => {
         'File::Copy::Recursive'     => '0.45',
+        'File::Which'               => '1.27',
+        'IPC::Run'                  => '20200505.0',
         'Mojolicious'               => '8.57',
         'Moose'                     => '2.2012',
         'MooseX::Types::Path::Tiny' => '0.012',

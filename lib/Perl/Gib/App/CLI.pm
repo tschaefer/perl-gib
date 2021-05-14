@@ -14,13 +14,18 @@ package Perl::Gib::App::CLI;
 use strict;
 use warnings;
 
+binmode STDOUT, ":encoding(UTF-8)";
+binmode STDERR, ":encoding(UTF-8)";
+
 use Moose;
 extends 'Perl::Gib::App';
 
 use Moose::Util qw(ensure_all_roles);
 
 use Carp qw(croak);
+use File::Which qw(which);
 use Getopt::Long qw(:config require_order);
+use IPC::Run;
 use List::Util qw(any);
 use Scalar::Util;
 use Term::ANSIColor;
@@ -129,7 +134,7 @@ sub _parse {
 
         return 0;
     };
-    return $rc if (!$rc);
+    return $rc if ( !$rc );
 
     if ( !scalar keys %{ $self->options } && !$self->action ) {
         print {*STDERR} "Missing action\n";
@@ -214,18 +219,54 @@ around 'run' => sub {
     return !$self->_execute();
 };
 
-### Print message to stdout or stderr.
-around [qw(help man usage version)] => sub {
-    my ($orig, $self) = @_;
+### #[ignore(item)]
+### Print version.
+around 'version' => sub {
+    my ( $orig, $self ) = @_;
 
-    my $subroutine = (caller 2)[3];
+    print $self->$orig();
 
-    if ($subroutine =~ /usage$/) {
-        print {*STDERR} $self->$orig();
+    return 1;
+};
+
+### #[ignore(item)]
+### Print help.
+around 'help' => sub {
+    my ( $orig, $self ) = @_;
+
+    my $tempfile = $self->$orig();
+    print <$tempfile>;
+
+    return 1;
+};
+
+### #[ignore(item)]
+### Print usage to stderr.
+around 'usage' => sub {
+    my ( $orig, $self ) = @_;
+
+    my $tempfile = $self->$orig();
+    print {*STDERR} <$tempfile>;
+
+    return 1;
+};
+
+### #[ignore(item)]
+### Open manpage in pager.
+around 'man' => sub {
+    my ( $orig, $self ) = @_;
+
+    my $tempfile = $self->$orig();
+
+    my $pager = $ENV{'PAGER'};
+    if ( !$pager || !which($pager) ) {
+        for (qw(less more)) {
+            $pager = which($_);
+            last if ($pager);
+        }
     }
-    else {
-        print $self->$orig();
-    }
+
+    IPC::Run::run( [ $pager, $tempfile->filename ] );
 
     return 1;
 };

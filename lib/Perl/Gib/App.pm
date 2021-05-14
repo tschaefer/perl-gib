@@ -74,55 +74,55 @@ sub _build_controller {
 sub help {
     my $self = shift;
 
-    my $fh = File::Temp->new();
+    my $tempfile = File::Temp->new();
 
     pod2usage(
         -exitval  => 'NOEXIT',
         -verbose  => 99,
         -sections => 'SYNOPSIS|OPTIONS|PARAMETERS',
         -input    => __FILE__,
-        -output   => $fh,
+        -output   => $tempfile,
     );
 
-    $fh->seek(0, SEEK_SET);
+    $tempfile->seek(0, SEEK_SET);
 
-    return <$fh>;
+    return $tempfile;
 }
 
 ### Return manpage.
 sub man {
     my $self = shift;
 
-    my $fh = File::Temp->new();
+    my $tempfile = File::Temp->new();
 
     pod2usage(
         -exitval => 'NOEXIT',
         -verbose => 2,
         -input   => __FILE__,
-        -output  => $fh,
+        -output  => $tempfile,
     );
 
-    $fh->seek(0, SEEK_SET);
+    $tempfile->seek(0, SEEK_SET);
 
-    return <$fh>;
+    return $tempfile;
 }
 
 ### Return usage message.
 sub usage {
     my $self = shift;
 
-    my $fh = File::Temp->new();
+    my $tempfile = File::Temp->new();
 
     pod2usage(
         -exitval => 'NOEXIT',
         -verbose => 0,
         -input   => __FILE__,
-        -output  => $fh,
+        -output  => $tempfile,
     );
 
-    $fh->seek(0, SEEK_SET);
+    $tempfile->seek(0, SEEK_SET);
 
-    return <$fh>;
+    return $tempfile;
 }
 
 ### Return Perl::Gib version string.
@@ -231,5 +231,16 @@ perlgib is Perl's alternative documentation and test manager.
 
 perlgib generates HTML and Markdown documentation and runs tests from Perl
 code comment lines.
+
+=head1 AUTHORS
+
+Tobias Schäfer github@blackox.org
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2021 by Tobias Schäfer.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
