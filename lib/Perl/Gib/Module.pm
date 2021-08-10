@@ -23,6 +23,7 @@ use Try::Tiny;
 use Perl::Gib::Config;
 use Perl::Gib::Item::Package;
 use Perl::Gib::Item::Subroutine;
+use Perl::Gib::Util qw(throw_exception);
 
 no warnings "uninitialized";
 
@@ -80,7 +81,8 @@ sub _build_dom {
     my $self = shift;
 
     my $dom = PPI::Document->new( $self->file->canonpath, readonly => 1 );
-    croak( sprintf "Module is empty: %s", $self->file->canonpath ) if ( !$dom );
+    throw_exception( 'ModuleIsEmpty', file => $self->file->canonpath() )
+      if ( !$dom );
     $dom->index_locations();
     $dom->prune('PPI::Token::Whitespace');
     $dom->prune(
@@ -128,7 +130,7 @@ sub _build_package {
         last if ($done);
     }
 
-    croak( sprintf "Module does not contain package: %s", $self->file )
+    throw_exception( 'FileIsNotAPerlModule', file => $self->file->canonpath() )
       if ( !@fragment );
 
     return Perl::Gib::Item::Package->new( fragment => \@fragment, );
@@ -165,7 +167,11 @@ sub _build_subroutines {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if (
+                        !$_->isa(
+                            'Perl::Gib::Exception::SubroutineIsIgnoredByComment')
+                        && !$_->isa('Perl::Gib::Exception::SubroutineIsPrivate')
+                      );
                 };
                 last if ( !$sub );
 
@@ -343,7 +349,7 @@ TEMPLATE
     system split / /, $cmd;
     my $rc = $CHILD_ERROR >> 8;
 
-    croak( sprintf "Module '%s' test failed", $self->package->statement )
+    throw_exception( 'ModuleTestFailed', name => $self->package->statement )
       if ($rc);
 
     return;

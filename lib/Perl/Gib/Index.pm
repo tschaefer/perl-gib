@@ -14,7 +14,6 @@ use Text::Markdown qw(markdown);
 
 use Perl::Gib::Config;
 
-### [ignore(item)]
 ### Perl::Gib configuration object. [optional]
 has 'config' => (
     is       => 'ro',

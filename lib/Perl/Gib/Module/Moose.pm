@@ -11,6 +11,7 @@ use warnings;
 
 use Moose::Role;
 
+use Carp qw(croak);
 use Readonly;
 use Try::Tiny;
 
@@ -76,7 +77,11 @@ sub _build_attributes {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if (
+                        !$_->isa(
+                            'Perl::Gib::Exception::AttributeIsIgnoredByComment')
+                        && !$_->isa('Perl::Gib::Exception::AttributeIsPrivate')
+                      );
                 };
                 last if ( !$attribute );
 
@@ -125,7 +130,11 @@ sub _build_modifiers {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if (
+                        !$_->isa(
+                            'Perl::Gib::Exception::ModifierIsIgnoredByComment')
+                        && !$_->isa('Perl::Gib::Exception::ModifierIsPrivate')
+                      );
                 };
                 last if ( !$modifier );
 
