@@ -33,16 +33,9 @@ subtest 'new' => sub {
 
     throws_ok(
         sub { Perl::Gib::Module->new( file => 'lib/Perl/Gib/Usage.md' ) },
-        qr/Module does not contain package/,
+        'Perl::Gib::Exception::FileIsNotAPerlModule',
         'Not a Perl module.'
     );
-
-    throws_ok(
-        sub { Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Item.pm' } ) },
-        qr/Package \/ Module ignored by comment/,
-        'Package / Module ignored by comment.'
-    );
-
 };
 
 subtest 'documentation' => sub {

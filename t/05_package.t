@@ -14,4 +14,17 @@ subtest 'class' => sub {
     does_ok( $class, 'Perl::Gib::Item' );
 };
 
+subtest 'new' => sub {
+    use Test::Exception;
+
+    use Perl::Gib::Module;
+
+    throws_ok(
+        sub { Perl::Gib::Module->new( { file => 'lib/Perl/Gib/Item.pm' } ) },
+        'Perl::Gib::Exception::PackageIsIgnoredByComment',
+        'Ignored by comment.'
+    );
+};
+
+
 done_testing();
