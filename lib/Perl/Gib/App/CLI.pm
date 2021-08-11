@@ -22,7 +22,6 @@ extends 'Perl::Gib::App';
 
 use Moose::Util qw(ensure_all_roles);
 
-use Carp qw(croak);
 use File::Which qw(which);
 use Getopt::Long qw(:config require_order);
 use IPC::Run;
@@ -34,6 +33,7 @@ use Try::Tiny;
 
 use Perl::Gib;
 use Perl::Gib::Config;
+use Perl::Gib::Util qw(throw_exception);
 
 $Term::ANSIColor::AUTORESET = 1;
 
@@ -69,7 +69,7 @@ sub _build_action {
 
     $action =~ s/-/_/g;
 
-    croak( sprintf "Unknown action: %s", $action )
+    throw_exception( 'AppUnknownAction', name => $action )
       if ( !any { $_ eq $action } qw(doc test) );
 
     shift @ARGV;
@@ -90,14 +90,14 @@ sub _build_options {
         "help|h"         => \$options{'help'},
         "man|m"          => \$options{'man'},
         "version|v"      => \$options{'version'},
-    ) or croak();
+    ) or throw_exception( 'AppUnknownOption' );
 
     foreach my $key ( keys %options ) {
         delete $options{$key} if ( !$options{$key} );
     }
     my $count = keys %options;
 
-    croak('Too many options')
+    throw_exception( 'AppTooManyOptions' )
       if ( ( $options{'help'} || $options{'man'} || $options{'version'} )
         && $count > 1 );
 
@@ -125,9 +125,9 @@ sub _parse {
         return 1;
     }
     catch {
-        my $message = ( split / at/ )[0];
+        my $exception = $_;
 
-        printf {*STDERR} "%s\n", $message if ($message);
+        printf {*STDERR} "%s\n", $exception->message if ($exception->message);
         print {*STDERR} "\n";
 
         $self->usage();
