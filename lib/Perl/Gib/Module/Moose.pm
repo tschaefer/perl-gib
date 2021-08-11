@@ -76,12 +76,15 @@ sub _build_attributes {
                     Perl::Gib::Item::Attribute->new( fragment => \@fragment, );
                 }
                 catch {
-                    croak($_)
-                      if (
-                        !$_->isa(
-                            'Perl::Gib::Exception::AttributeIsIgnoredByComment')
-                        && !$_->isa('Perl::Gib::Exception::AttributeIsPrivate')
-                      );
+                    for my $exception (
+                        qw(AttributeIsIgnoredByComment AttributeIsPrivate))
+                    {
+                        return
+                          if (
+                            $_->isa( 'Perl::Gib::Exception::' . $exception ) );
+                    }
+
+                    croak($_);
                 };
                 last if ( !$attribute );
 
@@ -129,12 +132,15 @@ sub _build_modifiers {
                     Perl::Gib::Item::Modifier->new( fragment => \@fragment, );
                 }
                 catch {
-                    croak($_)
-                      if (
-                        !$_->isa(
-                            'Perl::Gib::Exception::ModifierIsIgnoredByComment')
-                        && !$_->isa('Perl::Gib::Exception::ModifierIsPrivate')
-                      );
+                    for my $exception (
+                        qw(ModifierIsIgnoredByComment ModifierIsPrivate))
+                    {
+                        return
+                          if (
+                            $_->isa( 'Perl::Gib::Exception::' . $exception ) );
+                    }
+
+                    croak($_);
                 };
                 last if ( !$modifier );
 

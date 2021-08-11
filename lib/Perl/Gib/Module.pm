@@ -166,12 +166,15 @@ sub _build_subroutines {
                     Perl::Gib::Item::Subroutine->new( fragment => \@fragment, );
                 }
                 catch {
-                    croak($_)
-                      if (
-                        !$_->isa(
-                            'Perl::Gib::Exception::SubroutineIsIgnoredByComment')
-                        && !$_->isa('Perl::Gib::Exception::SubroutineIsPrivate')
-                      );
+                    for my $exception (
+                        qw(SubroutineIsIgnoredByComment SubroutineIsPrivate))
+                    {
+                        return
+                          if (
+                            $_->isa( 'Perl::Gib::Exception::' . $exception ) );
+                    }
+
+                    croak($_);
                 };
                 last if ( !$sub );
 
