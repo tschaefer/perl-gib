@@ -14,6 +14,10 @@ lib/Perl/Gib/App/CLI/Test.pm
 lib/Perl/Gib/Config.pm
 lib/Perl/Gib/Config.pod
 lib/Perl/Gib/Exception.pm
+lib/Perl/Gib/Exception/AppTooManyOptions.pm
+lib/Perl/Gib/Exception/AppUnknownAction.pm
+lib/Perl/Gib/Exception/AppUnknownOption.pm
+lib/Perl/Gib/Exception/AppUnknownOutputFormat.pm
 lib/Perl/Gib/Exception/AttributeIsIgnoredByComment.pm
 lib/Perl/Gib/Exception/AttributeIsPrivate.pm
 lib/Perl/Gib/Exception/FileIsNotAPerlModule.pm
