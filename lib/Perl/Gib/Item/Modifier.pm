@@ -23,7 +23,7 @@ sub _build_statement {
 
     my $name = $fragment->child(1)->string;
     throw_exception( 'ModifierIsPrivate', name => $name )
-      if ( $name =~ /^['"]_/ && !$self->config->document_private_items );
+      if ( $name =~ /^_/ && !$self->config->document_private_items );
 
     my @elements  = $fragment->elements;
     my $statement = join ' ', @elements[ 0, 1 ];
