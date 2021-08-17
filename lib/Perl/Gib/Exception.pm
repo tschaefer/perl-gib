@@ -40,7 +40,7 @@ sub _build_trace {
     }
     $skip++;
 
-    Devel::StackTrace->new(
+    return Devel::StackTrace->new(
         message     => $self->message,
         indent      => 1,
         skip_frames => $skip,
