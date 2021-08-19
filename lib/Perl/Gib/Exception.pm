@@ -1,6 +1,10 @@
 package Perl::Gib::Exception;
 
 ##! #[ignore(item)]
+##! Perl::Gib base exception class.
+##!
+##! This class contains attributes which are common to all Perl::Gib internal
+##! exception classes.
 
 use strict;
 use warnings;
@@ -8,6 +12,7 @@ use warnings;
 use Moose;
 use Devel::StackTrace 2.03;
 
+### Stack trace for the given exception.
 has 'trace' => (
     is      => 'ro',
     isa     => 'Devel::StackTrace',
@@ -15,6 +20,7 @@ has 'trace' => (
     lazy    => 1,
 );
 
+### Exception message.
 has 'message' => (
     is      => 'ro',
     isa     => 'Defined',
@@ -28,6 +34,8 @@ use overload(
     fallback => 1,
 );
 
+### Create [Devel::StackTrace](https://metacpan.org/pod/Devel::StackTrace)
+### object.
 sub _build_trace {
     my $self = shift;
 
@@ -48,6 +56,8 @@ sub _build_trace {
     );
 }
 
+### Every subclass of Perl::Gib is expected to override this  method in order
+### to construct this value.
 sub _build_message {
     my $self = shift;
 
@@ -60,6 +70,11 @@ sub BUILD {
     return $self->trace;
 }
 
+### This method returns a stringified form of the exception, including a stack
+### trace. By default, this method skips Perl::Gib-internal stack frames until
+### it sees a caller outside of the Perl:Gib core. If the
+### `PERL_GIB_FULL_EXCEPTION` environment variable is true, these frames are
+### included.
 sub as_string {
     my $self = shift;
 
