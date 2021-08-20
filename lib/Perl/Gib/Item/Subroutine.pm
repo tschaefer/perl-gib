@@ -73,7 +73,7 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
-    croak( sprintf "Subroutine documentation is empty: %s", $self->statement )
+    throw_exception( 'SubroutineIsUndocumented', name => $self->statement )
       if ( $self->config->ignore_undocumented_items && !$description );
 
     return $description;

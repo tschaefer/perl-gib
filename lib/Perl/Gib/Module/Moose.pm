@@ -79,7 +79,12 @@ sub _build_attributes {
                     return if ( $_ !~ /is empty/ );
 
                     for my $exception (
-                        qw(AttributeIsIgnoredByComment AttributeIsPrivate))
+                        qw(
+                        AttributeIsIgnoredByComment
+                        AttributeIsPrivate
+                        AttributeIsUndocumented
+                        )
+                      )
                     {
                         return
                           if (
@@ -137,7 +142,12 @@ sub _build_modifiers {
                     return if ( $_ !~ /is empty/ );
 
                     for my $exception (
-                        qw(ModifierIsIgnoredByComment ModifierIsPrivate))
+                        qw(
+                        ModifierIsIgnoredByComment
+                        ModifierIsPrivate
+                        ModifierIsUndocumented
+                        )
+                      )
                     {
                         return
                           if (

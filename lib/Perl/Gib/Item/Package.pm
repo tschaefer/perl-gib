@@ -45,7 +45,7 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
-    croak( sprintf "Package / Module documentation is empty: %s", $self->statement )
+    throw_exception( 'PackageIsUndocumented', name => $self->statement )
       if ( $self->config->ignore_undocumented_items && !$description );
 
     return $description;

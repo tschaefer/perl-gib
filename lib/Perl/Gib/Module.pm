@@ -166,10 +166,13 @@ sub _build_subroutines {
                     Perl::Gib::Item::Subroutine->new( fragment => \@fragment, );
                 }
                 catch {
-                    return if ( $_ !~ /is empty/ );
-
                     for my $exception (
-                        qw(SubroutineIsIgnoredByComment SubroutineIsPrivate))
+                        qw(
+                        SubroutineIsIgnoredByComment
+                        SubroutineIsPrivate
+                        SubroutineIsUndocumented
+                        )
+                      )
                     {
                         return
                           if (
