@@ -165,7 +165,9 @@ sub _build_subroutines {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if ( $_ !~ /ignored by comment/
+                        && $_ !~ /is private/
+                        && $_ !~ /is empty/ );
                 };
                 last if ( !$sub );
 

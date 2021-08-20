@@ -76,7 +76,9 @@ sub _build_attributes {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if ( $_ !~ /ignored by comment/
+                        && $_ !~ /is private/
+                        && $_ !~ /is empty/ );
                 };
                 last if ( !$attribute );
 
@@ -125,7 +127,9 @@ sub _build_modifiers {
                 }
                 catch {
                     croak($_)
-                      if ( $_ !~ /ignored by comment/ && $_ !~ /is private/ );
+                      if ( $_ !~ /ignored by comment/
+                        && $_ !~ /is private/
+                        && $_ !~ /is empty/ );
                 };
                 last if ( !$modifier );
 
