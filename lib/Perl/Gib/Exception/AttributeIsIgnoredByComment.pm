@@ -7,7 +7,7 @@ use warnings;
 
 use Moose;
 extends 'Perl::Gib::Exception';
-with 'Perl::Gib::Exception::ItemIsPrivate';
+with 'Perl::Gib::Exception::ItemIsIgnoredByComment';
 
 sub _build_item {
     my $self = shift;
