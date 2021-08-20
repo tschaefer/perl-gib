@@ -37,11 +37,13 @@ sub _build_action_options {
     my %options;
 
     GetOptions(
-        "output-path=s"          => \$options{'output_path'},
-        "output-format=s"        => \$options{'output_format'},
-        "document-private-items" => \$options{'document_private_items'},
-        "document-ignored-items" => \$options{'document_ignored_items'},
-        "no-html-index"          => \$options{'no_html_index'},
+        "output-path=s"             => \$options{'output_path'},
+        "output-format=s"           => \$options{'output_format'},
+        "document-private-items"    => \$options{'document_private_items'},
+        "document-ignored-items"    => \$options{'document_ignored_items'},
+        "ignore-undocumented-items" => \$options{'ignore_undocumented_items'},
+        "no-html-index"             => \$options{'no_html_index'},
+
     ) or throw_exception('AppUnknownOption');
 
     foreach my $key ( keys %options ) {

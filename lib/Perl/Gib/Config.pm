@@ -67,6 +67,13 @@ has 'document_ignored_items' => (
     default => sub { 0 },
 );
 
+### Ignore undocumented items. [optional]
+has 'ignore_undocumented_items' => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => sub { 0 },
+);
+
 __PACKAGE__->meta->make_immutable;
 
 1;

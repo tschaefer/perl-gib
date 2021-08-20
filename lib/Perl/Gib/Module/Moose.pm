@@ -76,6 +76,8 @@ sub _build_attributes {
                     Perl::Gib::Item::Attribute->new( fragment => \@fragment, );
                 }
                 catch {
+                    return if ( $_ !~ /is empty/ );
+
                     for my $exception (
                         qw(AttributeIsIgnoredByComment AttributeIsPrivate))
                     {
@@ -132,6 +134,8 @@ sub _build_modifiers {
                     Perl::Gib::Item::Modifier->new( fragment => \@fragment, );
                 }
                 catch {
+                    return if ( $_ !~ /is empty/ );
+
                     for my $exception (
                         qw(ModifierIsIgnoredByComment ModifierIsPrivate))
                     {
