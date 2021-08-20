@@ -63,7 +63,7 @@ following help output.
                 Document ignored items (#[ignore(item)]).
 
         --ignore-undocumented-items
-            Ignore undocumented items.
+                Ignore undocumented items.
 
         --no-html-index
                 Prevent creating of html index.
