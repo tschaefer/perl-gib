@@ -215,6 +215,10 @@ Document private items.
 
 Document ignored items (#[ignore(item)]).
 
+=item --ignore-undocumented-items
+
+Ignore undocumented items.
+
 =item --no-html-index
 
 Prevent creating of html index.

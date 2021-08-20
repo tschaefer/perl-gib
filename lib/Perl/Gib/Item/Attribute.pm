@@ -55,6 +55,9 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
+    croak( sprintf "Attribute documentation is empty: %s", $self->statement )
+      if ( $self->config->ignore_undocumented_items && !$description );
+
     return $description;
 }
 

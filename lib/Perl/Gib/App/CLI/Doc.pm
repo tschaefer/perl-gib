@@ -36,11 +36,12 @@ sub _build_action_options {
     my %options;
 
     GetOptions(
-        "output-path=s"          => \$options{'output_path'},
-        "output-format=s"        => \$options{'output_format'},
-        "document-private-items" => \$options{'document_private_items'},
-        "document-ignored-items" => \$options{'document_ignored_items'},
-        "no-html-index"          => \$options{'no_html_index'},
+        "output-path=s"             => \$options{'output_path'},
+        "output-format=s"           => \$options{'output_format'},
+        "document-private-items"    => \$options{'document_private_items'},
+        "document-ignored-items"    => \$options{'document_ignored_items'},
+        "ignore-undocumented-items" => \$options{'ignore_undocumented_items'},
+        "no-html-index"             => \$options{'no_html_index'},
     ) or croak();
 
     foreach my $key ( keys %options ) {
@@ -48,7 +49,7 @@ sub _build_action_options {
     }
     $options{'output_format'} = $options{'output_format'} || 'html';
 
-    croak(sprintf "Unknown output-format: %s", $options{'output_format'})
+    croak( sprintf "Unknown output-format: %s", $options{'output_format'} )
       if ( !any { $_ eq $options{'output_format'} } qw(html markdown pod all) );
 
     return \%options;
