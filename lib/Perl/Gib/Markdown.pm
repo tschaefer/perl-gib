@@ -8,8 +8,6 @@ use warnings;
 use Moose;
 use MooseX::Types::Path::Tiny qw(AbsFile);
 
-use Carp qw(croak carp);
-use English qw(-no_match_vars);
 use Pod::HTML2Pod;
 use Text::Markdown qw(markdown);
 

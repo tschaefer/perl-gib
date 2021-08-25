@@ -8,7 +8,6 @@ use warnings;
 use Carp qw(croak);
 use Module::Runtime 0.016 qw(use_package_optimistically);
 use Readonly;
-use overload ();
 
 use Exporter qw(import);
 
