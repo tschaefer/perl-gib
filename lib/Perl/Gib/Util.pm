@@ -1,6 +1,7 @@
 package Perl::Gib::Util;
 
 ##! #[ignore(item)]
+##! Perl::Gib internal utilities.
 
 use strict;
 use warnings;
@@ -17,6 +18,7 @@ Readonly::Array our @EXPORT_OK => qw(
 
 Readonly::Hash our %EXPORT_TAGS => ( all => [@EXPORT_OK], );
 
+### Throw given exception class including optional arguments.
 sub throw_exception {
     my ($class_name, @args_to_exception) = @_;
 
