@@ -11,6 +11,7 @@ use warnings;
 
 use Moose::Role;
 
+use Carp qw(croak);
 use Readonly;
 use Try::Tiny;
 
@@ -75,10 +76,22 @@ sub _build_attributes {
                     Perl::Gib::Item::Attribute->new( fragment => \@fragment, );
                 }
                 catch {
-                    croak($_)
-                      if ( $_ !~ /ignored by comment/
-                        && $_ !~ /is private/
-                        && $_ !~ /is empty/ );
+                    return if ( $_ !~ /is empty/ );
+
+                    for my $exception (
+                        qw(
+                        AttributeIsIgnoredByComment
+                        AttributeIsPrivate
+                        AttributeIsUndocumented
+                        )
+                      )
+                    {
+                        return
+                          if (
+                            $_->isa( 'Perl::Gib::Exception::' . $exception ) );
+                    }
+
+                    croak($_);
                 };
                 last if ( !$attribute );
 
@@ -126,10 +139,22 @@ sub _build_modifiers {
                     Perl::Gib::Item::Modifier->new( fragment => \@fragment, );
                 }
                 catch {
-                    croak($_)
-                      if ( $_ !~ /ignored by comment/
-                        && $_ !~ /is private/
-                        && $_ !~ /is empty/ );
+                    return if ( $_ !~ /is empty/ );
+
+                    for my $exception (
+                        qw(
+                        ModifierIsIgnoredByComment
+                        ModifierIsPrivate
+                        ModifierIsUndocumented
+                        )
+                      )
+                    {
+                        return
+                          if (
+                            $_->isa( 'Perl::Gib::Exception::' . $exception ) );
+                    }
+
+                    croak($_);
                 };
                 last if ( !$modifier );
 

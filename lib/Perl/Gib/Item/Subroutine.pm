@@ -10,7 +10,7 @@ use warnings;
 use Moose;
 with qw(Perl::Gib::Item);
 
-use Carp qw(croak);
+use Perl::Gib::Util qw(throw_exception);
 
 no warnings "uninitialized";
 
@@ -29,7 +29,7 @@ sub _build_statement {
     my $self = shift;
 
     my $name = $self->fragment->[0]->name;
-    croak( sprintf "Subroutine is private: %s", $name )
+    throw_exception( 'SubroutineIsPrivate', name => $name )
       if ( $name =~ /^_/ && !$self->config->document_private_items );
 
     my @params;
@@ -57,7 +57,8 @@ sub _build_description {
     shift @fragment;
 
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
-        croak( sprintf "Subroutine ignored by comment: %s", $self->statement )
+        throw_exception( 'SubroutineIsIgnoredByComment',
+            name => $self->statement )
           if ( !$self->config->document_ignored_items );
 
         shift @fragment;
@@ -72,7 +73,7 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
-    croak( sprintf "Subroutine documentation is empty: %s", $self->statement )
+    throw_exception( 'SubroutineIsUndocumented', name => $self->statement )
       if ( $self->config->ignore_undocumented_items && !$description );
 
     return $description;

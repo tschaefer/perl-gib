@@ -8,9 +8,10 @@ use warnings;
 
 use Moose::Role;
 
-use Carp qw(croak);
 use Getopt::Long qw(:config require_order);
 use List::Util qw(any);
+
+use Perl::Gib::Util qw(throw_exception);
 
 ### Perl::Gib configuration options, see [Perl::Gib::Config](../Config.html).
 has 'action_options' => (
@@ -42,14 +43,16 @@ sub _build_action_options {
         "document-ignored-items"    => \$options{'document_ignored_items'},
         "ignore-undocumented-items" => \$options{'ignore_undocumented_items'},
         "no-html-index"             => \$options{'no_html_index'},
-    ) or croak();
+
+    ) or throw_exception('AppUnknownOption');
 
     foreach my $key ( keys %options ) {
         delete $options{$key} if ( !$options{$key} );
     }
     $options{'output_format'} = $options{'output_format'} || 'html';
 
-    croak( sprintf "Unknown output-format: %s", $options{'output_format'} )
+    throw_exception( 'AppUnknownOutputFormat',
+        name => $options{'output_format'} )
       if ( !any { $_ eq $options{'output_format'} } qw(html markdown pod all) );
 
     return \%options;

@@ -49,6 +49,45 @@ subtest 'html' => sub {
     Perl::Gib::Config->_clear_instance();
 };
 
+subtest 'html no index' => sub {
+    use File::Find;
+    use Path::Tiny;
+
+    use Perl::Gib::Config;
+
+    my $dir = Path::Tiny->tempdir;
+
+    Perl::Gib::Config->initialize(
+        output_path => $dir,
+        no_html_index => 1,
+    );
+
+    my $perlgib = Perl::Gib->new();
+    $perlgib->html();
+
+    my @wanted = (
+        path( $dir, "Perl/Gib.html" ),
+        path( $dir, "Perl/Gib/App.html" ),
+        path( $dir, "Perl/Gib/App/CLI.html" ),
+        path( $dir, "Perl/Gib/Config.html" ),
+        path( $dir, "Perl/Gib/Markdown.html" ),
+        path( $dir, "Perl/Gib/Module.html" ),
+        path( $dir, "Perl/Gib/Template.html" ),
+        path( $dir, "Perl/Gib/Usage.html" ),
+    );
+
+    my @docs;
+    find( sub { push @docs, $File::Find::name if ( -f && /\.html$/ ); }, $dir );
+    @docs = sort @docs;
+
+    is_deeply( \@docs, \@wanted, 'all docs generated' );
+
+    $dir->remove_tree( { safe => 0 } );
+
+    Perl::Gib::Config->_clear_instance();
+};
+
+
 subtest 'markdown' => sub {
     use File::Find;
     use Path::Tiny;

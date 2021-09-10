@@ -10,7 +10,7 @@ use warnings;
 use Moose;
 with qw(Perl::Gib::Item);
 
-use Carp qw(croak);
+use Perl::Gib::Util qw(throw_exception);
 
 no warnings "uninitialized";
 
@@ -21,9 +21,9 @@ sub _build_statement {
 
     my $fragment = $self->fragment->[0];
 
-    my $name = $fragment->child(1);
-    croak( sprintf "Modifier is private: %s", $name )
-      if ( $name =~ /^['"]_/ && !$self->config->document_private_items );
+    my $name = $fragment->child(1)->string;
+    throw_exception( 'ModifierIsPrivate', name => $name )
+      if ( $name =~ /^_/ && !$self->config->document_private_items );
 
     my @elements  = $fragment->elements;
     my $statement = join ' ', @elements[ 0, 1 ];
@@ -41,7 +41,8 @@ sub _build_description {
     shift @fragment;
 
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
-        croak( sprintf "Modifier ignored by comment: %s", $self->statement )
+        throw_exception( 'ModifierIsIgnoredByComment',
+            name => $self->statement )
           if ( !$self->config->document_ignored_items );
 
         shift @fragment;
@@ -55,7 +56,7 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
-    croak( sprintf "Modifier documentation is empty: %s", $self->statement )
+    throw_exception( 'ModifierIsUndocumented', name => $self->statement )
       if ( $self->config->ignore_undocumented_items && !$description );
 
     return $description;

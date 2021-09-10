@@ -8,7 +8,7 @@ Generate Perl project documentation and run module test scripts.
 
 =head1 Methods
 
-=head2 C<sub html($self); #212>
+=head2 C<sub html($self); #209>
 
 Create output directory, copy assets (CSS, JS, fonts), generate HTML
 content and write it to files.
@@ -47,11 +47,11 @@ content and write it to files.
  
  Perl::Gib::Config->_clear_instance();
 
-=head2 C<sub test($self); #258>
+=head2 C<sub test($self); #255>
 
 Run project modules test scripts.
 
-=head2 C<sub markdown($self); #303>
+=head2 C<sub markdown($self); #300>
 
 Create output directory, generate Markdown content and write it to
 files.
@@ -89,7 +89,7 @@ files.
  
  Perl::Gib::Config->_clear_instance();
 
-=head2 C<sub pod($self); #355>
+=head2 C<sub pod($self); #352>
 
 Create output directory, generate Pod content and write it to files.
 
@@ -130,6 +130,6 @@ Create output directory, generate Pod content and write it to files.
 
 #Pod::HTML2Pod conversion notes:
 # 3203 bytes of input
-#Fri Aug 20 07:50:42 2021 tschaefer
+#Mon Sep  6 18:20:37 2021 tschaefer
 # No a_name switch not specified, so will not try to render <a name='...'>
 # Will try to render <a href='...'>

@@ -9,8 +9,6 @@ use warnings;
 use Moose;
 use MooseX::Types::Path::Tiny qw(AbsFile);
 
-use English qw(-no_match_vars);
-use Carp qw(croak);
 use Mojo::Template;
 use Path::Tiny;
 

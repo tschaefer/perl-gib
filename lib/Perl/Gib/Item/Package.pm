@@ -10,7 +10,7 @@ use warnings;
 use Moose;
 with qw(Perl::Gib::Item);
 
-use Carp qw(croak);
+use Perl::Gib::Util qw(throw_exception);
 
 no warnings "uninitialized";
 
@@ -31,8 +31,7 @@ sub _build_description {
     shift @fragment;
 
     if ( $fragment[0] =~ /#\[ignore\(item\)\]/ ) {
-        croak( sprintf "Package / Module ignored by comment: %s",
-            $self->statement )
+        throw_exception( 'PackageIsIgnoredByComment', name => $self->statement )
           if ( !$self->config->document_ignored_items );
 
         shift @fragment;
@@ -46,7 +45,7 @@ sub _build_description {
 
     $description =~ s/\s+$//g;
 
-    croak( sprintf "Package / Module documentation is empty: %s", $self->statement )
+    throw_exception( 'PackageIsUndocumented', name => $self->statement )
       if ( $self->config->ignore_undocumented_items && !$description );
 
     return $description;

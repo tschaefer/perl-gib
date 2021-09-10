@@ -13,6 +13,8 @@ use warnings;
 
 use Moose::Role;
 
+use Perl::Gib::Config;
+
 requires qw(_build_statement _build_description);
 
 ### Perl::Gib configuration object. [optional]

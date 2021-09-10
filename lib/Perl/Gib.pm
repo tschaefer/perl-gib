@@ -14,11 +14,8 @@ use feature qw(state);
 use Moose;
 use MooseX::Types::Path::Tiny qw(AbsPath AbsDir);
 
-use Carp qw(croak carp);
-use English qw(-no_match_vars);
 use File::Copy::Recursive qw(dircopy dirmove);
 use File::Find qw(find);
-use Mojo::Template;
 use Path::Tiny;
 use Try::Tiny;
 
