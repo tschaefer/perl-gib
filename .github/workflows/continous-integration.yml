@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  perl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: perl -V
+        run: perl -V
+      - name: Install cpanminus
+        run: sudo apt install cpanminus
+      - name: Install dependencies
+        run: |
+          sudo cpanm -n --installdeps .
+          sudo cpanm -n Test::Moose::More Test::Exception
+      - name: Run tests
+        run: prove -l t t/
